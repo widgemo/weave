@@ -156,7 +156,9 @@ function dsHandleCallback() {
     body:    body.toString()
   }).then(function(resp) {
     if (!resp.ok) {
-      return resp.text().then(function(txt) { throw new Error(txt); });
+      return resp.text().then(function(txt) {
+        throw new Error('HTTP ' + resp.status + ' ' + resp.statusText + (txt ? ': ' + txt : ''));
+      });
     }
     return resp.json();
   }).then(function(data) {
@@ -172,9 +174,7 @@ function dsHandleCallback() {
     var msg = e && e.message ? e.message : String(e);
     var detail = e && e.stack ? e.stack : '';
     var isFetchNetworkError = (e instanceof TypeError) || /Failed to fetch|NetworkError/i.test(msg);
-    if (isFetchNetworkError) {
-      detail = 'Token URL: ' + dsSafeUrlForLog(tokenUrl) + '\nThis is usually a network/CORS/mixed-content issue, or an invalid token path/base URL.\n' + detail;
-    }
+    detail = 'Token URL: ' + dsSafeUrlForLog(tokenUrl) + '\n' + (isFetchNetworkError ? 'This is usually a network/CORS/mixed-content issue, or an invalid token path/base URL.\n' : '') + detail;
     appLog('error', 'Auth failed: ' + msg, detail);
     history.replaceState(null, '', window.location.pathname);
     return false;
@@ -197,12 +197,20 @@ function dsRefreshAccessToken() {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body:    body.toString()
   }).then(function(resp) {
-    if (!resp.ok) throw new Error('refresh failed');
+    if (!resp.ok) {
+      return resp.text().then(function(txt) {
+        throw new Error('HTTP ' + resp.status + ' ' + resp.statusText + (txt ? ': ' + txt : ''));
+      });
+    }
     return resp.json();
   }).then(function(data) {
     return dsSaveToken(data);
   }).catch(function(e) {
-    appLog('warning', 'Token refresh failed — session ended', e && e.message ? e.message : '');
+    var msg = e && e.message ? e.message : String(e);
+    var detail = e && e.stack ? e.stack : '';
+    var isFetchNetworkError = (e instanceof TypeError) || /Failed to fetch|NetworkError/i.test(msg);
+    detail = 'Token URL: ' + dsSafeUrlForLog(tokenUrl) + '\n' + (isFetchNetworkError ? 'This is usually a network/CORS/mixed-content issue, or an invalid token path/base URL.\n' : '') + detail;
+    appLog('warning', 'Token refresh failed — session ended: ' + msg, detail);
     dsClearToken();
     dsUpdateBannerBtn();
     dsUpdatePanelStatus();
@@ -234,6 +242,7 @@ function dsApiGet(path, queryParams) {
     appLog('error', 'Data source query endpoint path is required');
     return Promise.reject(new Error('Data source endpoint path is required'));
   }
+  var resolvedUrl = null;
   return dsGetValidToken().then(function(token) {
     if (!token) {
       appLog('warning', 'Not connected to data source');
@@ -246,6 +255,7 @@ function dsApiGet(path, queryParams) {
       var qs = new URLSearchParams(queryParams).toString();
       if (qs) url += (url.indexOf('?') === -1 ? '?' : '&') + qs;
     }
+    resolvedUrl = url;
     return fetch(url, {
       headers: {
         'Authorization': 'Bearer ' + token,
@@ -256,10 +266,22 @@ function dsApiGet(path, queryParams) {
     if (!resp) return null;
     if (!resp.ok) {
       return resp.text().then(function(txt) {
-        throw new Error(resp.status + ': ' + txt);
+        var err = new Error('HTTP ' + resp.status + ' ' + resp.statusText + (txt ? ': ' + txt : '') + (resolvedUrl ? ' [' + dsSafeUrlForLog(resolvedUrl) + ']' : ''));
+        err._dsLogged = true;
+        appLog('error', 'API request failed: ' + err.message, resolvedUrl ? 'URL: ' + dsSafeUrlForLog(resolvedUrl) : '');
+        throw err;
       });
     }
     return resp.json();
+  }).catch(function(e) {
+    if (e && e._dsLogged) { throw e; }
+    var msg = e && e.message ? e.message : String(e);
+    var isFetchNetworkError = (e instanceof TypeError) || /Failed to fetch|NetworkError/i.test(msg);
+    var detail = (resolvedUrl ? 'URL: ' + dsSafeUrlForLog(resolvedUrl) + '\n' : '') +
+      (isFetchNetworkError ? 'This is usually a network/CORS/mixed-content issue.\n' : '') +
+      (e && e.stack ? e.stack : '');
+    appLog('error', 'API request failed: ' + msg, detail);
+    throw e;
   });
 }
 
@@ -422,7 +444,6 @@ function dsRunQuery() {
     })
     .catch(function(e) {
       statusEl.textContent = 'Error: ' + e.message;
-      appLog('error', 'Query failed: ' + e.message, e.stack || '');
     });
 }
 
