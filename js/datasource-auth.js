@@ -69,8 +69,8 @@ function dsInitLogin() {
   var verifier   = dsGenerateVerifier();
   dsGenerateChallenge(verifier).then(function(challenge) {
     var state       = dsGenerateState();
-    //var redirectUri = window.location.href.split('?')[0].split('#')[0];
-    var redirectUri = 'https://mark-enet.github.io/weave/';
+    var redirectUri = window.location.href.split('?')[0].split('#')[0];
+    //var redirectUri = 'https://mark-enet.github.io/weave/';
     sessionStorage.setItem(DS_PKCE_KEY, JSON.stringify({
       verifier:    verifier,
       state:       state,
@@ -280,8 +280,8 @@ function dsOpenConfig() {
   document.getElementById('ds-token-path').value  = cfg.tokenPath  || '/oauth_token.do';
   document.getElementById('ds-label').value       = cfg.label      || '';
   var hint = document.getElementById('ds-redirect-uri-hint');
-  //if (hint) hint.textContent = window.location.href.split('?')[0].split('#')[0];
-  if (hint) hint.textContent = 'https://mark-enet.github.io/weave/';
+  if (hint) hint.textContent = window.location.href.split('?')[0].split('#')[0];
+  //if (hint) hint.textContent = 'https://mark-enet.github.io/weave/';
   document.getElementById('ds-config-modal').classList.add('open');
 }
 function dsCloseConfig() {
