@@ -313,6 +313,53 @@ html.dark .elevel-debug{background:rgba(136,153,200,.12);color:#99aacc}
   animation:pd 2s ease-in-out infinite}
 @keyframes pd{0%,100%{opacity:1}50%{opacity:.4}}
 
+/* ── ERROR BANNER ────────────────────────────────────── */
+.error-banner{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:10010;
+  background:#c0392b;color:#fff;border-radius:0 0 14px 14px;padding:13px 20px 13px 16px;
+  display:flex;align-items:center;gap:10px;box-shadow:0 6px 28px rgba(0,0,0,.45);
+  min-width:260px;max-width:min(600px,90vw);font-size:.88rem;font-family:'Nunito',sans-serif;
+  font-weight:600;opacity:0;transition:opacity .2s}
+.error-banner.error-banner-in{opacity:1}
+.error-banner-icon{width:18px;height:18px;flex-shrink:0}
+.error-banner-msg{flex:1;line-height:1.4}
+.error-banner-dismiss{background:rgba(255,255,255,.2);border:none;cursor:pointer;
+  color:#fff;font-size:1rem;line-height:1;padding:3px 7px;border-radius:6px;
+  margin-left:4px;transition:background .15s;flex-shrink:0}
+.error-banner-dismiss:hover{background:rgba(255,255,255,.35)}
+
+/* ── LOGS NAV BUTTON / BADGE ─────────────────────────── */
+.log-nav-btn{position:relative}
+.log-badge{position:absolute;top:-4px;right:-6px;background:#c0392b;color:#fff;
+  border-radius:10px;font-size:.6rem;font-family:'DM Mono',monospace;font-weight:700;
+  min-width:16px;height:16px;padding:0 4px;display:inline-flex;align-items:center;
+  justify-content:center;pointer-events:none}
+
+/* ── LOG VIEWER MODAL ────────────────────────────────── */
+.log-modal-overlay{align-items:flex-start;padding-top:60px}
+.log-modal-card{max-width:560px;width:94%;text-align:left;max-height:75vh;
+  display:flex;flex-direction:column;padding:24px 22px 20px}
+.log-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+  scrollbar-width:thin;scrollbar-color:var(--scrollbar) transparent;min-height:60px}
+.log-empty{color:var(--text3);font-size:.8rem;padding:12px 0}
+.log-entry{border-radius:8px;padding:9px 12px;border:1px solid var(--border);
+  background:var(--surface2);font-size:.8rem}
+.log-entry-error{border-color:#c0392b;background:rgba(192,57,43,.08)}
+html.dark .log-entry-error{background:rgba(224,85,85,.1);border-color:#e05555}
+.log-entry-warning{border-color:var(--warn);background:rgba(245,166,35,.07)}
+html.dark .log-entry-warning{background:rgba(245,166,35,.08)}
+.log-entry-header{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.log-entry-badge{font-size:.62rem;font-family:'DM Mono',monospace;font-weight:700;
+  padding:2px 6px;border-radius:4px;letter-spacing:.04em}
+.log-badge-error{background:#c0392b;color:#fff}
+html.dark .log-badge-error{background:#e05555}
+.log-badge-warning{background:var(--warn);color:#fff}
+.log-badge-info{background:var(--accent2);color:#fff}
+.log-entry-ts{font-size:.68rem;font-family:'DM Mono',monospace;color:var(--text3)}
+.log-entry-msg{color:var(--text);line-height:1.45;word-break:break-word}
+.log-entry-detail{margin-top:5px;font-family:'DM Mono',monospace;font-size:.68rem;
+  color:var(--text2);background:var(--surface3);border-radius:5px;padding:6px 8px;
+  white-space:pre-wrap;word-break:break-all;max-height:140px;overflow-y:auto}
+
 /* ── TOAST ───────────────────────────────────────────── */
 .toast{position:fixed;bottom:22px;right:22px;background:var(--toast-bg);
   border:1px solid var(--toast-border);border-radius:12px;padding:11px 15px;

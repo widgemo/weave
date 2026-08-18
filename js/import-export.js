@@ -58,7 +58,7 @@ function importData(e){
         (ev.interactions||[]).forEach(function(i){if(i.target) knownSys.add(i.target);});
       });
       refreshDL(); refreshLevelDL(); clearFilters(); render(); updateList(); toast('Imported','\u2191');
-    }catch(err){toast('Invalid file','X');}
+    }catch(err){toast('Invalid file','X'); appLog('error','Invalid import file', err&&err.message?err.message:String(err));}
   };
   reader.readAsText(file); e.target.value='';
 }
