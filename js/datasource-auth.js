@@ -149,7 +149,7 @@ function dsHandleCallback() {
     dsUpdatePanelStatus();
     return true;
   }).catch(function(e) {
-    appLog('error', 'Auth failed: ' + e.message, e.message);
+    appLog('error', 'Auth failed: ' + e.message, e.stack || '');
     history.replaceState(null, '', window.location.pathname);
     return false;
   });
@@ -392,7 +392,7 @@ function dsRunQuery() {
     })
     .catch(function(e) {
       statusEl.textContent = 'Error: ' + e.message;
-      appLog('error', 'Query failed: ' + e.message, e.message);
+      appLog('error', 'Query failed: ' + e.message, e.stack || '');
     });
 }
 

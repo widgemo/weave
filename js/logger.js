@@ -78,14 +78,17 @@ function _renderLogViewer() {
     el.innerHTML = '<div class="log-empty">No log entries yet.</div>';
     return;
   }
+  // Allowlist level values before interpolating into class attributes
+  var _VALID_LEVELS = {info:1, warning:1, error:1};
   // Render newest first
   var html = '';
   for (var i = appLogEntries.length - 1; i >= 0; i--) {
     var e = appLogEntries[i];
+    var lvl = _VALID_LEVELS[e.level] ? e.level : 'info';
     var tstr = _logFmtTime(e.ts);
-    html += '<div class="log-entry log-entry-' + e.level + '">';
+    html += '<div class="log-entry log-entry-' + lvl + '">';
     html += '<div class="log-entry-header">';
-    html += '<span class="log-entry-badge log-badge-' + e.level + '">' + e.level.toUpperCase() + '</span>';
+    html += '<span class="log-entry-badge log-badge-' + lvl + '">' + lvl.toUpperCase() + '</span>';
     html += '<span class="log-entry-ts">' + esc(tstr) + '</span>';
     html += '</div>';
     html += '<div class="log-entry-msg">' + esc(e.msg) + '</div>';
