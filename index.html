@@ -88,6 +88,15 @@
         </button>
       </div>
     </div>
+    <!-- Logs button -->
+    <button class="nav-btn log-nav-btn" onclick="openLogViewer()" title="View application logs" id="log-nav-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/>
+      </svg>Logs
+      <span class="log-badge" id="log-badge" style="display:none"></span>
+    </button>
     <!-- About: icon-only to reduce navbar clutter -->
     <button class="theme-btn" onclick="openAbout()" title="About Weave">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -105,6 +114,15 @@
     </button>
   </div>
 </header>
+
+<!-- Error Banner: prominent, top-centered, requires dismissal -->
+<div id="error-banner" class="error-banner" style="display:none" role="alert" aria-live="assertive">
+  <svg class="error-banner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  <span id="error-banner-msg" class="error-banner-msg"></span>
+  <button class="error-banner-dismiss" onclick="dismissErrorBanner()" title="Dismiss">&#x2715;</button>
+</div>
 
 <div class="app-layout">
   <aside class="sidebar">
@@ -588,6 +606,19 @@
   </div>
 </div>
 
+<!-- Log Viewer Modal -->
+<div class="modal-overlay log-modal-overlay" id="log-modal">
+  <div class="modal-card log-modal-card" role="dialog" aria-modal="true" aria-label="Application Logs">
+    <button class="modal-close" onclick="closeLogViewer()" title="Close">&#x2715;</button>
+    <h2 class="about-title" style="font-size:1.15rem;margin-bottom:4px;text-align:left">Application Logs</h2>
+    <p class="about-sub" style="margin-bottom:12px;text-align:left">In-session activity and errors</p>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <button class="btn btn-outline btn-sm" onclick="clearAppLog()">Clear logs</button>
+    </div>
+    <div id="log-list" class="log-list"></div>
+  </div>
+</div>
+
 <!-- Confirm Modal -->
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-label="Confirm action">
@@ -600,6 +631,7 @@
   </div>
 </div>
 
+<script src="js/logger.js"></script>
 <script src="js/state.js"></script>
 <script src="js/render.js"></script>
 <script src="js/render-timeline.js"></script>

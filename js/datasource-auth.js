@@ -103,7 +103,7 @@ function dsHandleCallback() {
       'unsupported_response_type','invalid_scope','server_error','temporarily_unavailable',
       'invalid_grant','unsupported_grant_type','invalid_client'];
     var safeError = knownErrors.indexOf(String(error)) !== -1 ? String(error) : 'unknown_error';
-    toast('Auth error: ' + safeError, '\u2715');
+    appLog('error', 'Auth error: ' + safeError);
     history.replaceState(null, '', window.location.pathname);
     return Promise.resolve(false);
   }
@@ -114,7 +114,7 @@ function dsHandleCallback() {
   catch(e) { pkce = null; }
 
   if (!pkce || pkce.state !== state) {
-    toast('OAuth state mismatch \u2014 possible CSRF', '\u2715');
+    appLog('error', 'OAuth state mismatch \u2014 possible CSRF');
     history.replaceState(null, '', window.location.pathname);
     return Promise.resolve(false);
   }
@@ -144,11 +144,12 @@ function dsHandleCallback() {
     sessionStorage.removeItem(DS_PKCE_KEY);
     history.replaceState(null, '', window.location.pathname);
     toast('Connected \u2713', '\u2713');
+    appLog('info', 'Connected to data source');
     dsUpdateBannerBtn();
     dsUpdatePanelStatus();
     return true;
   }).catch(function(e) {
-    toast('Auth failed: ' + e.message, '\u2715');
+    appLog('error', 'Auth failed: ' + e.message, e.stack || '');
     history.replaceState(null, '', window.location.pathname);
     return false;
   });
@@ -174,7 +175,8 @@ function dsRefreshAccessToken() {
     return resp.json();
   }).then(function(data) {
     return dsSaveToken(data);
-  }).catch(function() {
+  }).catch(function(e) {
+    appLog('warning', 'Token refresh failed — session ended', e && e.message ? e.message : '');
     dsClearToken();
     dsUpdateBannerBtn();
     dsUpdatePanelStatus();
@@ -197,12 +199,14 @@ function dsLogout() {
   dsUpdatePanelStatus();
   dsCloseBannerMenu();
   toast('Disconnected', '\u2713');
+  appLog('info', 'Disconnected from data source');
 }
 
 // ── REST API ───────────────────────────────────────────────────────────────
 function dsApiGet(path, queryParams) {
   return dsGetValidToken().then(function(token) {
     if (!token) {
+      appLog('warning', 'Not connected to data source');
       toast('Not connected to data source', '!');
       return null;
     }
@@ -305,6 +309,7 @@ function dsSaveConfigUI() {
                  authPath: authPath, tokenPath: tokenPath, label: label });
   dsCloseConfig();
   toast('Connection settings saved', '\u2713');
+  appLog('info', 'Connection settings saved');
   dsUpdateBannerBtn();
 }
 
@@ -387,7 +392,7 @@ function dsRunQuery() {
     })
     .catch(function(e) {
       statusEl.textContent = 'Error: ' + e.message;
-      toast('Query failed: ' + e.message, '\u2715');
+      appLog('error', 'Query failed: ' + e.message, e.stack || '');
     });
 }
 
@@ -478,6 +483,7 @@ function dsImportAll() {
   });
   document.getElementById('ds-import-all-btn').style.display = 'none';
   toast(records.length + ' record(s) imported', '\u2191');
+  appLog('info', records.length + ' record(s) imported from data source');
 }
 
 function dsRecordToEvent(rec, descField, sysField, actorField, tsField, eventCodeField, levelField, integCodeField, intCfg) {
@@ -583,6 +589,7 @@ function dsExportConfig() {
   a.click();
   URL.revokeObjectURL(url);
   toast('Config exported', '\u2193');
+  appLog('info', 'Data source config exported');
 }
 
 function dsImportConfigClick() {
@@ -597,11 +604,11 @@ function dsImportConfigFile(e) {
     try {
       var data = JSON.parse(ev.target.result);
       if (!data.weaveDsConfig) {
-        toast('Not a valid Weave data source config file', '\u2715');
+        appLog('error', 'Not a valid Weave data source config file');
         return;
       }
       if (!data.baseUrl || !data.clientId) {
-        toast('Config file is missing Base URL or Client ID', '!');
+        appLog('error', 'Config file is missing Base URL or Client ID');
         return;
       }
       dsSaveConfig({
@@ -621,8 +628,9 @@ function dsImportConfigFile(e) {
       document.getElementById('ds-token-path').value = data.tokenPath || '/oauth_token.do';
       dsUpdateBannerBtn();
       toast('Config imported', '\u2191');
+      appLog('info', 'Data source config imported');
     } catch(err) {
-      toast('Invalid config file', '\u2715');
+      appLog('error', 'Invalid config file', err && err.message ? err.message : String(err));
     }
   };
   reader.readAsText(file);
@@ -714,6 +722,7 @@ function dsExportQuery() {
   a.click();
   URL.revokeObjectURL(url);
   toast('Query exported', '\u2193');
+  appLog('info', 'Query config exported');
 }
 
 function dsImportQueryClick() {
@@ -728,7 +737,7 @@ function dsImportQueryFile(e) {
     try {
       var data = JSON.parse(ev.target.result);
       if (!data.weaveDsQuery) {
-        toast('Not a valid Weave query file', '\u2715');
+        appLog('error', 'Not a valid Weave query file');
         return;
       }
       var fm = data.fieldMap || {};
@@ -752,8 +761,9 @@ function dsImportQueryFile(e) {
       });
       dsSaveQueryLocal();
       toast('Query imported', '\u2191');
+      appLog('info', 'Query config imported');
     } catch(err) {
-      toast('Invalid query file', '\u2715');
+      appLog('error', 'Invalid query file', err && err.message ? err.message : String(err));
     }
   };
   reader.readAsText(file);
