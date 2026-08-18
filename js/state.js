@@ -1,5 +1,5 @@
 // ── STATE ───────────────────────────────────────────────
-var APP_VERSION = '2026.08.18.142022';
+var APP_VERSION = '2026.08.18.144320';
 var events=[], editIdx=-1, iCount=0, scenName='', scenDesc='', appMode='timeline';
 var diagramZoom=1.0;
 var timelineCompact = true;
