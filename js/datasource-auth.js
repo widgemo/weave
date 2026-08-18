@@ -14,6 +14,27 @@ function dsSaveConfig(cfg) {
   localStorage.setItem(DS_CONFIG_KEY, JSON.stringify(cfg));
 }
 
+function dsNormalizeBaseUrl(baseUrl) {
+  return String(baseUrl || '').trim().replace(/\/$/, '');
+}
+
+function dsResolveUrl(baseUrl, path, defaultPath) {
+  var base = dsNormalizeBaseUrl(baseUrl);
+  var rawPath = String(path || defaultPath || '').trim();
+  if (/^https?:\/\//i.test(rawPath)) return rawPath;
+  if (rawPath && rawPath.charAt(0) !== '/') rawPath = '/' + rawPath;
+  return base + rawPath;
+}
+
+function dsSafeUrlForLog(url) {
+  try {
+    var u = new URL(String(url || ''));
+    return u.origin + u.pathname;
+  } catch(e) {
+    return String(url || '').split('?')[0].split('#')[0];
+  }
+}
+
 // ── TOKEN STORAGE ──────────────────────────────────────────────────────────
 function dsSaveToken(data) {
   var token = {
@@ -76,8 +97,7 @@ function dsInitLogin() {
       state:       state,
       redirectUri: redirectUri
     }));
-    var base       = cfg.baseUrl.replace(/\/$/, '');
-    var authPath   = cfg.authPath || '/oauth_auth.do';
+    var authPath   = cfg.authPath;
     var params = new URLSearchParams({
       response_type:         'code',
       client_id:             cfg.clientId,
@@ -87,7 +107,7 @@ function dsInitLogin() {
       code_challenge_method: 'S256'
     });
     if (cfg.scope) params.set('scope', cfg.scope);
-    window.location.href = base + authPath + '?' + params.toString();
+    window.location.href = dsResolveUrl(cfg.baseUrl, authPath, '/oauth_auth.do') + '?' + params.toString();
   });
 }
 
@@ -120,8 +140,8 @@ function dsHandleCallback() {
   }
 
   var cfg       = dsLoadConfig();
-  var base      = cfg.baseUrl.replace(/\/$/, '');
-  var tokenPath = cfg.tokenPath || '/oauth_token.do';
+  var tokenPath = cfg.tokenPath;
+  var tokenUrl  = dsResolveUrl(cfg.baseUrl, tokenPath, '/oauth_token.do');
   var body = new URLSearchParams({
     grant_type:    'authorization_code',
     client_id:     cfg.clientId,
@@ -130,7 +150,7 @@ function dsHandleCallback() {
     code_verifier: pkce.verifier
   });
 
-  return fetch(base + tokenPath, {
+  return fetch(tokenUrl, {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body:    body.toString()
@@ -149,7 +169,13 @@ function dsHandleCallback() {
     dsUpdatePanelStatus();
     return true;
   }).catch(function(e) {
-    appLog('error', 'Auth failed: ' + e.message, e.stack || '');
+    var msg = e && e.message ? e.message : String(e);
+    var detail = e && e.stack ? e.stack : '';
+    var isFetchNetworkError = (e instanceof TypeError) || /Failed to fetch|NetworkError/i.test(msg);
+    if (isFetchNetworkError) {
+      detail = 'Token URL: ' + dsSafeUrlForLog(tokenUrl) + '\nThis is usually a network/CORS/mixed-content issue, or an invalid token path/base URL.\n' + detail;
+    }
+    appLog('error', 'Auth failed: ' + msg, detail);
     history.replaceState(null, '', window.location.pathname);
     return false;
   });
@@ -159,14 +185,14 @@ function dsRefreshAccessToken() {
   var tok = dsLoadToken();
   if (!tok || !tok.refreshToken) return Promise.resolve(null);
   var cfg       = dsLoadConfig();
-  var base      = cfg.baseUrl.replace(/\/$/, '');
-  var tokenPath = cfg.tokenPath || '/oauth_token.do';
+  var tokenPath = cfg.tokenPath;
+  var tokenUrl  = dsResolveUrl(cfg.baseUrl, tokenPath, '/oauth_token.do');
   var body = new URLSearchParams({
     grant_type:    'refresh_token',
     client_id:     cfg.clientId,
     refresh_token: tok.refreshToken
   });
-  return fetch(base + tokenPath, {
+  return fetch(tokenUrl, {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body:    body.toString()
@@ -204,6 +230,10 @@ function dsLogout() {
 
 // ── REST API ───────────────────────────────────────────────────────────────
 function dsApiGet(path, queryParams) {
+  if (!path) {
+    appLog('error', 'Data source query endpoint path is required');
+    return Promise.reject(new Error('Data source endpoint path is required'));
+  }
   return dsGetValidToken().then(function(token) {
     if (!token) {
       appLog('warning', 'Not connected to data source');
@@ -211,10 +241,10 @@ function dsApiGet(path, queryParams) {
       return null;
     }
     var cfg  = dsLoadConfig();
-    var base = cfg.baseUrl.replace(/\/$/, '');
-    var url  = base + path;
+    var url  = dsResolveUrl(cfg.baseUrl, path, '');
     if (queryParams) {
-      url += '?' + new URLSearchParams(queryParams).toString();
+      var qs = new URLSearchParams(queryParams).toString();
+      if (qs) url += (url.indexOf('?') === -1 ? '?' : '&') + qs;
     }
     return fetch(url, {
       headers: {
