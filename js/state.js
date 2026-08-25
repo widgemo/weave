@@ -1,5 +1,5 @@
 // ── STATE ───────────────────────────────────────────────
-var APP_VERSION = '2026.08.25.203107';
+var APP_VERSION = '2026.08.25.214406';
 var events=[], editIdx=-1, iCount=0, scenName='', scenDesc='', appMode='timeline';
 var selectedEventId=null; // _id of currently selected/highlighted event
 var diagramZoom=1.0;
