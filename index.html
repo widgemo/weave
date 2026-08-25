@@ -632,6 +632,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="export-name-modal">
+  <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-label="Export file name" style="max-width:460px;width:90%">
+    <h3 class="confirm-title" id="export-name-title">Export</h3>
+    <div class="fg" style="text-align:left;margin-bottom:18px">
+      <label class="fl" for="export-name-input">File name</label>
+      <input type="text" id="export-name-input" class="tsel" style="width:100%;box-sizing:border-box" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter') acceptExportName(); if(event.key==='Escape') closeExportNameModal();">
+    </div>
+    <div class="confirm-btns">
+      <button class="btn btn-s" onclick="closeExportNameModal()">Cancel</button>
+      <button class="btn btn-p" id="export-name-ok-btn" onclick="acceptExportName()">Export</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/logger.js"></script>
 <script src="js/state.js"></script>
 <script src="js/render.js"></script>

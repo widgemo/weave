@@ -97,6 +97,7 @@ function render(){
         '<h3>No events match filters</h3><p>Adjust or clear the active filters to see events.</p></div>';
     }
     if(typeof updateLegendColors==='function') updateLegendColors();
+    if(typeof persistAppState==='function') persistAppState();
     return;
   }
   var sorted=[...active].sort(function(a,b){return(a.timestamp||0)-(b.timestamp||0);});
@@ -116,6 +117,7 @@ function render(){
     var _dsvg=_getSvg(); if(_dsvg) _dsvg.setAttribute('cursor','grab');
   }
   if(typeof updateLegendColors==='function') updateLegendColors();
+  if(typeof persistAppState==='function') persistAppState();
 }
 
 // ── DIAGRAM ZOOM ─────────────────────────────────────────

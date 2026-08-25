@@ -50,6 +50,47 @@ function acceptConfirm(){
 }
 
 
+// EXPORT FILENAME MODAL
+var _exportedNames=new Set(); // tracks filenames exported this session
+var _exportNameCb=null;
+function triggerDownload(blob,filename){
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download=filename;
+  a.click(); URL.revokeObjectURL(url);
+}
+function promptExportFilename(defaultName,title,onExport){
+  document.getElementById('export-name-title').textContent=title||'Export';
+  var input=document.getElementById('export-name-input');
+  input.value=defaultName||'export.json';
+  _exportNameCb=onExport;
+  document.getElementById('export-name-modal').classList.add('open');
+  setTimeout(function(){input.focus();input.select();},80);
+}
+function closeExportNameModal(){
+  document.getElementById('export-name-modal').classList.remove('open');
+  _exportNameCb=null;
+}
+function acceptExportName(){
+  var input=document.getElementById('export-name-input');
+  var name=(input.value||'').trim();
+  if(!name){input.focus();return;}
+  var cb=_exportNameCb;
+  if(_exportedNames.has(name.toLowerCase())){
+    // File was already exported this session — confirm overwrite
+    closeExportNameModal();
+    showConfirm(
+      '\u201C'+name+'\u201D was already exported this session. Export again with this name?',
+      function(){_exportedNames.add(name.toLowerCase());if(cb) cb(name);},
+      'Export','File Already Exported'
+    );
+  } else {
+    closeExportNameModal();
+    _exportedNames.add(name.toLowerCase());
+    if(cb) cb(name);
+  }
+}
+
+
 // THEME TOGGLE
 function toggleTheme(){
   var isDark=document.documentElement.classList.toggle('dark');
@@ -682,6 +723,9 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('confirm-modal').addEventListener('click',function(e){
     if(e.target===this) closeConfirm();
   });
+  document.getElementById('export-name-modal').addEventListener('click',function(e){
+    if(e.target===this) closeExportNameModal();
+  });
   // Close file menu when clicking outside
   document.addEventListener('click',function(e){
     var menu=document.getElementById('file-menu');
@@ -691,4 +735,6 @@ document.addEventListener('DOMContentLoaded',function(){
       fileMenuClose();
     }
   });
+  // Restore persisted app state (runs after all default init so it overwrites defaults)
+  if(typeof loadAppState==='function') loadAppState();
 });
