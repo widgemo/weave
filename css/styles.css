@@ -428,6 +428,7 @@ html.dark .log-badge-error{background:#e05555}
 .fsearch:focus{border-color:var(--accent)}
 .fbar-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1}
 .fbar-clear{margin-left:auto;flex-shrink:0}
+.fbar-related-label{display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;flex-shrink:0;cursor:pointer;color:var(--fg2);padding:0 4px}
 
 /* Multichoice dropdown */
 .fdd{position:relative}

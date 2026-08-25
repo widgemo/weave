@@ -105,9 +105,19 @@ function clearFilters(){
   filterConfig.levels=[];
   filterConfig.eventCodes=[];
   filterConfig.integrationCodes=[];
+  filterConfig.showRelated=true;
   var inp=document.getElementById('f-text');
   if(inp) inp.value='';
+  var chk=document.getElementById('f-show-related');
+  if(chk) chk.checked=true;
   refreshFilterBar();
+  render();
+}
+
+// Show Related Items checkbox handler
+function applyShowRelated(){
+  var chk=document.getElementById('f-show-related');
+  filterConfig.showRelated=chk?chk.checked:true;
   render();
 }
 

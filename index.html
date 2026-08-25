@@ -508,6 +508,10 @@
         </div>
       </div>
       <button class="btn btn-outline btn-sm fbar-clear" id="fbar-clear" onclick="clearFilters()" title="Clear all filters">&#x2715; Clear</button>
+      <label class="fbar-related-label" id="fbar-related-label" title="Also show events linked to matching events via interactions">
+        <input type="checkbox" id="f-show-related" checked onchange="applyShowRelated()">
+        Show Related Items
+      </label>
     </div>
     <div class="cvport-wrap">
       <div class="cvport">

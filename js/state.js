@@ -18,7 +18,7 @@ var knownSys=new Set();
 var displayConfig={showLevel:true,showEventCode:true,showManagedIntegrationCode:true,showActor:true,showDate:true,showSeq:true,
   dateFormat:localStorage.getItem('weave-date-format')||'YYYY-MM-DD',
   timeFormat:localStorage.getItem('weave-time-format')||'HH:mm:ss'};
-var filterConfig={text:'',systems:[],actors:[],levels:[],eventCodes:[],integrationCodes:[]};
+var filterConfig={text:'',systems:[],actors:[],levels:[],eventCodes:[],integrationCodes:[],showRelated:true};
 var COLORS_L=['#e8604a','#3cbfbf','#f5a623','#7755cc','#c04535','#2a9d8f','#e76f51'];
 var COLORS_D=['#f07060','#45d0d0','#f5b030','#8888cc','#e05050','#35b8b8','#f09070'];
 function COLORS_ARR(){return document.documentElement.classList.contains('dark')?COLORS_D:COLORS_L;}
@@ -158,20 +158,46 @@ function ensureIds(){events.forEach(function(ev,i){if(!ev._id) ev._id='evt-'+Dat
 function findEventByIdIdx(id){for(var i=0;i<events.length;i++){if(events[i]._id===id) return i;}return -1;}
 
 // ACTIVE (FILTERED) EVENTS
-function getActiveEvents(){
+function _matchesFilter(ev){
   var q=(filterConfig.text||'').trim().toLowerCase();
-  return events.filter(function(ev){
-    if(q){
-      var hay=[ev.desc,ev.system,ev.actor,ev.eventCode,ev.managedIntegrationCode,ev.level].join(' ').toLowerCase();
-      if(hay.indexOf(q)===-1) return false;
-    }
-    if(filterConfig.systems.length&&filterConfig.systems.indexOf(ev.system)===-1) return false;
-    if(filterConfig.actors.length&&filterConfig.actors.indexOf(ev.actor||'')===-1) return false;
-    if(filterConfig.levels.length&&filterConfig.levels.indexOf(ev.level||'')===-1) return false;
-    if(filterConfig.eventCodes.length&&filterConfig.eventCodes.indexOf(ev.eventCode||'')===-1) return false;
-    if(filterConfig.integrationCodes.length&&filterConfig.integrationCodes.indexOf(ev.managedIntegrationCode||'')===-1) return false;
-    return true;
+  if(q){
+    var hay=[ev.desc,ev.system,ev.actor,ev.eventCode,ev.managedIntegrationCode,ev.level].join(' ').toLowerCase();
+    if(hay.indexOf(q)===-1) return false;
+  }
+  if(filterConfig.systems.length&&filterConfig.systems.indexOf(ev.system)===-1) return false;
+  if(filterConfig.actors.length&&filterConfig.actors.indexOf(ev.actor||'')===-1) return false;
+  if(filterConfig.levels.length&&filterConfig.levels.indexOf(ev.level||'')===-1) return false;
+  if(filterConfig.eventCodes.length&&filterConfig.eventCodes.indexOf(ev.eventCode||'')===-1) return false;
+  if(filterConfig.integrationCodes.length&&filterConfig.integrationCodes.indexOf(ev.managedIntegrationCode||'')===-1) return false;
+  return true;
+}
+function getActiveEvents(){
+  if(!isFilterActive()) return events.slice();
+  var matched=events.filter(_matchesFilter);
+  if(!filterConfig.showRelated) return matched;
+  // Expand with related events: events linked via interactions to/from matched events
+  var matchedIds=new Set(matched.map(function(ev){return ev._id;}));
+  // Build a map of all events by _id for fast lookup
+  var evMap={};
+  events.forEach(function(ev){evMap[ev._id]=ev;});
+  // Build set of related IDs: for each matched event, add its interaction targets (by triggerEventId)
+  // and also add any event that has an interaction pointing to a matched event
+  var relatedIds=new Set();
+  events.forEach(function(ev){
+    (ev.interactions||[]).forEach(function(inter){
+      if(inter.triggerEventId){
+        // ev → triggerEventId: if either end is matched, include the other
+        if(matchedIds.has(ev._id)) relatedIds.add(inter.triggerEventId);
+        if(matchedIds.has(inter.triggerEventId)) relatedIds.add(ev._id);
+      }
+    });
   });
+  // Merge matched + related (preserving original order)
+  var result=[];
+  events.forEach(function(ev){
+    if(matchedIds.has(ev._id)||(relatedIds.has(ev._id)&&evMap[ev._id])) result.push(ev);
+  });
+  return result;
 }
 function isFilterActive(){
   return !!(filterConfig.text.trim()||filterConfig.systems.length||filterConfig.actors.length||
