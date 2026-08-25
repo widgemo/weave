@@ -1,6 +1,7 @@
 // ── STATE ───────────────────────────────────────────────
 var APP_VERSION = '2026.08.25.203107';
 var events=[], editIdx=-1, iCount=0, scenName='', scenDesc='', appMode='timeline';
+var selectedEventId=null; // _id of currently selected/highlighted event
 var diagramZoom=1.0;
 var timelineCompact = true;
 var timelineReverse = localStorage.getItem('weave-timeline-reverse')==='1';
@@ -47,6 +48,8 @@ function svgColors(){
     subRowBg: dark?'rgba(30,26,50,.6)':'rgba(255,248,240,.9)',
     cmnt:     dark?'#60a8d0':'#2880b8',
     note:     dark?'#d4a060':'#9a6c30',
+    hlSel:    dark?'#ffe066':'#f5b800',   // selected event highlight (yellow/gold)
+    hlRel:    dark?'#80e8b0':'#22b566',   // related target/origin event highlight (green)
   };
 }
 

@@ -32,7 +32,7 @@ function importData(e){
         document.getElementById('orientation').value=data.settings.orientation||'vertical';
         document.getElementById('flow-dir').value=data.settings.flowDirection||'lr';
       }
-      events=data.events||[]; sysOrder=data.sysOrder||{}; systemsRegistry=data.systemsRegistry||[]; actorsRegistry=data.actorsRegistry||[]; knownSys.clear();
+      events=data.events||[]; sysOrder=data.sysOrder||{}; systemsRegistry=data.systemsRegistry||[]; actorsRegistry=data.actorsRegistry||[]; knownSys.clear(); selectedEventId=null;
       // Levels are fixed; normalize any non-standard values from imported events
       levelsRegistry=FIXED_LEVELS.slice();
       events.forEach(function(ev){ev.level=normalizeLevel(ev.level);});

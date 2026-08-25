@@ -389,6 +389,7 @@ function deleteEvent(idx){
     var evId=events[idx]&&events[idx]._id;
     events.splice(idx,1);
     if(evId) tableSelection.delete(evId);
+    if(evId&&selectedEventId===evId) selectedEventId=null;
     if(editIdx===idx) clearForm(); else if(editIdx>idx) editIdx--;
     render(); updateList(); refreshFilterBar(); toast('Deleted','\uD83D\uDDD1');
   },'Delete','Delete Event');
@@ -403,6 +404,7 @@ function clearForm(){
   document.getElementById('managed-integration-code').value='';
   clearI(); editIdx=-1;
   document.getElementById('cancel-edit').style.display='none';
+  if(selectedEventId){selectedEventId=null; render();}
   updateList();
 }
 function saveScenario(){
