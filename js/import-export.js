@@ -1,16 +1,18 @@
 // IMPORT / EXPORT
 function exportData(){
-  var data={version:3,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,levelsRegistry:levelsRegistry,
-    displayConfig:displayConfig,
-    settings:{orientation:document.getElementById('orientation').value,
-              showDate:displayConfig.showDate,
-              flowDirection:document.getElementById('flow-dir').value,
-              showSeq:displayConfig.showSeq,
-              timezone:getDisplayTZ()},events:events};
-  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url;
-  a.download=(scenName||'eventflow')+'-'+appMode+'-'+new Date().toISOString().slice(0,10)+'.json';
-  a.click(); URL.revokeObjectURL(url); toast('Exported','\u2193');
+  var defaultName=(scenName||'eventflow')+'-'+appMode+'-'+new Date().toISOString().slice(0,10)+'.json';
+  promptExportFilename(defaultName,'Export Data',function(filename){
+    var data={version:3,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,levelsRegistry:levelsRegistry,
+      displayConfig:displayConfig,
+      settings:{orientation:document.getElementById('orientation').value,
+                showDate:displayConfig.showDate,
+                flowDirection:document.getElementById('flow-dir').value,
+                showSeq:displayConfig.showSeq,
+                timezone:getDisplayTZ()},events:events};
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    triggerDownload(blob,filename);
+    toast('Exported','\u2193');
+  });
 }
 function importClick(){document.getElementById('import-file').click();}
 function importData(e){
@@ -63,3 +65,99 @@ function importData(e){
   reader.readAsText(file); e.target.value='';
 }
 
+// LOCAL STORAGE PERSISTENCE
+var WEAVE_APP_STATE_KEY='weave-app-state';
+var WEAVE_APP_STATE_MAX_BYTES=4*1024*1024; // 4 MB — skip data if larger
+var _persistTimer=null;
+
+function _doPersistAppState(){
+  try{
+    var data={version:3,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,
+      sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,
+      displayConfig:{
+        showLevel:displayConfig.showLevel,
+        showEventCode:displayConfig.showEventCode,
+        showManagedIntegrationCode:displayConfig.showManagedIntegrationCode,
+        showActor:displayConfig.showActor,
+        showDate:displayConfig.showDate,
+        showSeq:displayConfig.showSeq
+      },
+      settings:{
+        orientation:(document.getElementById('orientation')||{}).value||'vertical',
+        flowDirection:(document.getElementById('flow-dir')||{}).value||'lr'
+      },
+      events:events};
+    var json=JSON.stringify(data);
+    var byteLen=(typeof TextEncoder!=='undefined')
+      ? new TextEncoder().encode(json).length
+      : json.length; // fallback: ASCII-only approximation
+    if(byteLen>WEAVE_APP_STATE_MAX_BYTES){
+      appLog('info','App state too large for localStorage ('+Math.round(byteLen/1024)+'KB), skipping persistence');
+      return;
+    }
+    localStorage.setItem(WEAVE_APP_STATE_KEY,json);
+  }catch(e){
+    // Quota exceeded or other storage error — silently skip
+  }
+}
+
+function persistAppState(){
+  // Debounce: coalesce rapid successive calls (e.g. zoom/filter) into one write after 400 ms
+  if(_persistTimer) clearTimeout(_persistTimer);
+  _persistTimer=setTimeout(function(){_persistTimer=null; _doPersistAppState();},400);
+}
+
+function loadAppState(){
+  try{
+    var raw=localStorage.getItem(WEAVE_APP_STATE_KEY);
+    if(!raw) return false;
+    var data=JSON.parse(raw);
+    scenName=data.scenarioName||''; scenDesc=data.scenarioDesc||'';
+    var nameEl=document.getElementById('scenario-name');
+    var descEl=document.getElementById('scenario-desc');
+    if(nameEl) nameEl.value=scenName;
+    if(descEl) descEl.value=scenDesc;
+    var importedMode=data.appMode||'timeline';
+    switchAppMode(importedMode);
+    if(data.settings){
+      var orientEl=document.getElementById('orientation');
+      var flowEl=document.getElementById('flow-dir');
+      if(orientEl) orientEl.value=data.settings.orientation||'vertical';
+      if(flowEl) flowEl.value=data.settings.flowDirection||'lr';
+    }
+    events=data.events||[]; sysOrder=data.sysOrder||{};
+    systemsRegistry=data.systemsRegistry||[]; actorsRegistry=data.actorsRegistry||[];
+    knownSys.clear();
+    levelsRegistry=FIXED_LEVELS.slice();
+    events.forEach(function(ev){ev.level=normalizeLevel(ev.level);});
+    if(data.displayConfig){
+      displayConfig.showLevel=data.displayConfig.showLevel!==false;
+      displayConfig.showEventCode=data.displayConfig.showEventCode!==false;
+      displayConfig.showManagedIntegrationCode=data.displayConfig.showManagedIntegrationCode!==false;
+      displayConfig.showActor=data.displayConfig.showActor!==false;
+      displayConfig.showDate=data.displayConfig.showDate!==false;
+      displayConfig.showSeq=data.displayConfig.showSeq!==false;
+      var dcLevel=document.getElementById('dc-level');
+      var dcCode=document.getElementById('dc-event-code');
+      var dcMic=document.getElementById('dc-managed-integration-code');
+      var dcActor=document.getElementById('dc-actor');
+      var dcDate=document.getElementById('dc-show-date');
+      var dcSeq=document.getElementById('dc-show-seq');
+      if(dcLevel) dcLevel.checked=displayConfig.showLevel;
+      if(dcCode) dcCode.checked=displayConfig.showEventCode;
+      if(dcMic) dcMic.checked=displayConfig.showManagedIntegrationCode;
+      if(dcActor) dcActor.checked=displayConfig.showActor;
+      if(dcDate) dcDate.checked=displayConfig.showDate;
+      if(dcSeq) dcSeq.checked=displayConfig.showSeq;
+    }
+    events.forEach(function(ev){
+      if(ev.system) knownSys.add(ev.system);
+      (ev.interactions||[]).forEach(function(i){if(i.target) knownSys.add(i.target);});
+    });
+    refreshDL(); refreshLevelDL(); render(); updateList();
+    return true;
+  }catch(e){
+    appLog('error','Failed to restore app state from localStorage',e&&e.message?e.message:String(e));
+    return false;
+  }
+}

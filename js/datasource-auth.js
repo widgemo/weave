@@ -632,15 +632,12 @@ function dsExportConfig() {
     authPath:  cfg.authPath  || '/oauth_auth.do',
     tokenPath: cfg.tokenPath || '/oauth_token.do'
   };
-  var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href     = url;
-  a.download = 'weave-ds-config.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('Config exported', '\u2193');
-  appLog('info', 'Data source config exported');
+  promptExportFilename('weave-ds-config.json','Export Config',function(filename){
+    var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
+    triggerDownload(blob, filename);
+    toast('Config exported', '\u2193');
+    appLog('info', 'Data source config exported');
+  });
 }
 
 function dsImportConfigClick() {
@@ -765,15 +762,12 @@ function dsExportQuery() {
     }
   };
   var exportObj = { weaveDsQuery: true, endpoint: q.endpoint, queryParams: q.queryParams, fieldMap: fieldMap };
-  var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  a.href     = url;
-  a.download = 'weave-ds-query.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('Query exported', '\u2193');
-  appLog('info', 'Query config exported');
+  promptExportFilename('weave-ds-query.json','Export Query',function(filename){
+    var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
+    triggerDownload(blob, filename);
+    toast('Query exported', '\u2193');
+    appLog('info', 'Query config exported');
+  });
 }
 
 function dsImportQueryClick() {
