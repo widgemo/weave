@@ -262,6 +262,31 @@ function renderTimeline(parent,sorted,orientation){
   // interactions (drawn under nodes, sorted by order)
   var NODE_R=17, ARROW_OFFSET=10;
 
+  // Compute highlight sets when an event is selected
+  var hlSrcIds={}; // arrows FROM selected event: srcEvId -> true
+  var hlInIds={};  // source event IDs of arrows pointing TO selected event's system at ~selected time
+  var hlTgtSystems={}; // target systems of FROM arrows
+  var selEv=selectedEventId?sorted.filter(function(e){return e._id===selectedEventId;})[0]:null;
+  if(selEv){
+    // FROM selected: collect target systems
+    (selEv.interactions||[]).forEach(function(inter){
+      if(inter.target) hlTgtSystems[inter.target]=true;
+    });
+    hlSrcIds[selEv._id]=true;
+    // TO selected: find events whose interactions target the selected event's system
+    // and whose arrow endpoint time (~e.timestamp+delay) is near selectedEvent's timestamp
+    var SEL_TS=selEv.timestamp, TOL=60000; // 60s tolerance
+    sorted.forEach(function(e){
+      if(e._id===selEv._id) return;
+      (e.interactions||[]).forEach(function(inter){
+        if(inter.target===selEv.system){
+          var endTs=e.timestamp+(inter.delay||0);
+          if(Math.abs(endTs-SEL_TS)<=TOL) hlInIds[e._id]=true;
+        }
+      });
+    });
+  }
+
   // 1. Collect all arrows
   var arrows=[];
   sorted.forEach(function(e){
@@ -284,7 +309,8 @@ function renderTimeline(parent,sorted,orientation){
         sx:sx,sy:sy,tx:tx,ty:ty,
         nature:inter.nature,color:ic,
         label:inter.label||(appMode==='timeline'&&inter.delay?inter.nature+' +'+inter.delay+'ms':''),
-        seqIdx:iIdx,_offset:0
+        seqIdx:iIdx,_offset:0,
+        srcEvId:e._id, tgtSystem:inter.target
       });
     });
   });
@@ -336,12 +362,20 @@ function renderTimeline(parent,sorted,orientation){
     x1=p1.x; y1=p1.y; x2=p2.x; y2=p2.y;
     mEnd=ar.nature==='process'?'':'url(#arr-'+ar.nature+'-'+rid+')';
 
-    aL(g,x1,y1,x2,y2,{stroke:ar.color,'stroke-width':2,'stroke-dasharray':ar.nature==='process'?'5,3':'','marker-end':mEnd});
+    // Determine highlight state
+    var isFromSel=selEv&&hlSrcIds[ar.srcEvId];
+    var isToSel=selEv&&hlInIds[ar.srcEvId];
+    var isUnrelated=selEv&&!isFromSel&&!isToSel;
+    var strokeW=isFromSel||isToSel?3.5:2;
+    var strokeColor=isFromSel?svgColors().hlSel:isToSel?svgColors().hlRel:ar.color;
+    var opacity=isUnrelated?0.25:1;
+
+    aL(g,x1,y1,x2,y2,{stroke:strokeColor,'stroke-width':strokeW,'stroke-dasharray':ar.nature==='process'?'5,3':'','marker-end':mEnd,opacity:opacity});
     var mx=(x1+x2)/2+(isH?0:5), my=(y1+y2)/2-18;
-    aT(g,mx,my,ar.label,{'text-anchor':'middle','font-size':'11','fill':ar.color,'font-family':'DM Mono,monospace'});
+    aT(g,mx,my,ar.label,{'text-anchor':'middle','font-size':'11','fill':strokeColor,'font-family':'DM Mono,monospace',opacity:opacity});
     var bmx=(x1+x2)/2, bmy=(y1+y2)/2;
-    aC(g,bmx,bmy,11,{fill:ar.color,opacity:.9});
-    aT(g,bmx,bmy+5,String(ar.seqIdx+1),{'text-anchor':'middle','font-size':'10','fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace'});
+    aC(g,bmx,bmy,11,{fill:strokeColor,opacity:isUnrelated?0.2:0.9});
+    aT(g,bmx,bmy+5,String(ar.seqIdx+1),{'text-anchor':'middle','font-size':'10','fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:opacity});
   });
 
   // nodes
@@ -351,32 +385,56 @@ function renderTimeline(parent,sorted,orientation){
     // Level icon inside circle (icon shape + level color)
     var lc=e.level?levelColor(e.level):null;
     var strokeColor=lc||color;
-    aC(g,cx,cy,17,{fill:svgColors().nodeFill,stroke:strokeColor,'stroke-width':'2.5'});
+
+    // Highlight state for this node
+    var isSel=selEv&&e._id===selEv._id;
+    var isRelIn=selEv&&hlInIds[e._id];         // source of an incoming arrow
+    var isRelTgt=selEv&&hlTgtSystems[e.system]; // in a target system of a FROM arrow
+    var isRelated=isRelIn||isRelTgt;
+    var isUnrelated=selEv&&!isSel&&!isRelated;
+    var nodeOpacity=isUnrelated?0.3:1;
+
+    // Draw highlight glow ring behind node
+    if(isSel){
+      aC(g,cx,cy,26,{fill:'none',stroke:svgColors().hlSel,'stroke-width':3,opacity:.85});
+    } else if(isRelated){
+      aC(g,cx,cy,24,{fill:'none',stroke:svgColors().hlRel,'stroke-width':2.5,opacity:.8});
+    }
+
+    aC(g,cx,cy,17,{fill:svgColors().nodeFill,stroke:strokeColor,'stroke-width':'2.5',opacity:nodeOpacity});
     if(lc) drawLevelIcon(g,cx,cy,e.level,lc);
     // Text labels below/beside node
     var textX=isH?cx:cx+21, textAnchor=isH?'middle':'start';
     var textY=isH?cy+34:cy+5;
-    aT(g,textX,textY,trunc(e.desc,30),{'text-anchor':textAnchor,'font-size':'14','fill':svgColors().label});
+    aT(g,textX,textY,trunc(e.desc,30),{'text-anchor':textAnchor,'font-size':'14','fill':svgColors().label,opacity:nodeOpacity});
     textY+=16;
     if(displayConfig.showActor&&e.actor){
-      aT(g,textX,textY,trunc(e.actor,25),{'text-anchor':textAnchor,'font-size':'12','fill':svgColors().actor,'font-family':'DM Mono,monospace'});
+      aT(g,textX,textY,trunc(e.actor,25),{'text-anchor':textAnchor,'font-size':'12','fill':svgColors().actor,'font-family':'DM Mono,monospace',opacity:nodeOpacity});
       textY+=16;
     }
     if(displayConfig.showEventCode&&e.eventCode){
-      aT(g,textX,textY,trunc(e.eventCode,20),{'text-anchor':textAnchor,'font-size':'12','fill':svgColors().listTs,'font-family':'DM Mono,monospace'});
+      aT(g,textX,textY,trunc(e.eventCode,20),{'text-anchor':textAnchor,'font-size':'12','fill':svgColors().listTs,'font-family':'DM Mono,monospace',opacity:nodeOpacity});
       textY+=16;
     }
     if(displayConfig.showManagedIntegrationCode&&e.managedIntegrationCode){
-      aT(g,textX,textY,trunc(e.managedIntegrationCode,20),{'text-anchor':textAnchor,'font-size':'12','fill':svgColors().listInt,'font-family':'DM Mono,monospace'});
+      aT(g,textX,textY,trunc(e.managedIntegrationCode,20),{'text-anchor':textAnchor,'font-size':'12','fill':svgColors().listInt,'font-family':'DM Mono,monospace',opacity:nodeOpacity});
     }
-    // Transparent click overlay — loads event into editor
+    // Transparent click overlay — loads event into editor and highlights
     var hitCircle=sv('circle',{cx:cx,cy:cy,r:19,fill:'transparent',cursor:'pointer','data-event-hit':'1'});
     hitCircle.addEventListener('click',(function(evId){return function(ev2){
       ev2.stopPropagation();
       var idx=findEventByIdIdx(evId);
-      if(idx>=0) editEvent(idx);
+      if(idx>=0){
+        selectedEventId=(selectedEventId===evId)?null:evId;
+        render();
+        if(selectedEventId) editEvent(findEventByIdIdx(selectedEventId));
+      }
     };})(e._id));
     g.appendChild(hitCircle);
+  });
+  // Click on SVG background deselects
+  svg.addEventListener('click',function(){
+    if(selectedEventId){selectedEventId=null; render();}
   });
   parent.appendChild(svg);
 }
