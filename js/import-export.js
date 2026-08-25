@@ -68,8 +68,9 @@ function importData(e){
 // LOCAL STORAGE PERSISTENCE
 var WEAVE_APP_STATE_KEY='weave-app-state';
 var WEAVE_APP_STATE_MAX_BYTES=4*1024*1024; // 4 MB — skip data if larger
+var _persistTimer=null;
 
-function persistAppState(){
+function _doPersistAppState(){
   try{
     var data={version:3,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,
       sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,
@@ -87,14 +88,23 @@ function persistAppState(){
       },
       events:events};
     var json=JSON.stringify(data);
-    if(json.length>WEAVE_APP_STATE_MAX_BYTES){
-      appLog('info','App state too large for localStorage ('+Math.round(json.length/1024)+'KB), skipping persistence');
+    var byteLen=(typeof TextEncoder!=='undefined')
+      ? new TextEncoder().encode(json).length
+      : json.length; // fallback: ASCII-only approximation
+    if(byteLen>WEAVE_APP_STATE_MAX_BYTES){
+      appLog('info','App state too large for localStorage ('+Math.round(byteLen/1024)+'KB), skipping persistence');
       return;
     }
     localStorage.setItem(WEAVE_APP_STATE_KEY,json);
   }catch(e){
     // Quota exceeded or other storage error — silently skip
   }
+}
+
+function persistAppState(){
+  // Debounce: coalesce rapid successive calls (e.g. zoom/filter) into one write after 400 ms
+  if(_persistTimer) clearTimeout(_persistTimer);
+  _persistTimer=setTimeout(function(){_persistTimer=null; _doPersistAppState();},400);
 }
 
 function loadAppState(){
