@@ -18,7 +18,7 @@ var knownSys=new Set();
 var displayConfig={showLevel:true,showEventCode:true,showManagedIntegrationCode:true,showActor:true,showDate:true,showSeq:true,
   dateFormat:localStorage.getItem('weave-date-format')||'YYYY-MM-DD',
   timeFormat:localStorage.getItem('weave-time-format')||'HH:mm:ss'};
-var filterConfig={text:'',systems:[],actors:[],levels:[],eventCodes:[],integrationCodes:[],showRelated:true};
+var filterConfig={text:'',systems:[],actors:[],levels:[],eventCodes:[],integrationCodes:[],eventIds:[],showRelated:true};
 var COLORS_L=['#e8604a','#3cbfbf','#f5a623','#7755cc','#c04535','#2a9d8f','#e76f51'];
 var COLORS_D=['#f07060','#45d0d0','#f5b030','#8888cc','#e05050','#35b8b8','#f09070'];
 function COLORS_ARR(){return document.documentElement.classList.contains('dark')?COLORS_D:COLORS_L;}
@@ -172,6 +172,18 @@ function _matchesFilter(ev){
   return true;
 }
 function getActiveEvents(){
+  if(filterConfig.eventIds.length){
+    var selectedIds=new Set(filterConfig.eventIds);
+    var isolatedIds=new Set(filterConfig.eventIds);
+    events.forEach(function(ev){
+      (ev.interactions||[]).forEach(function(inter){
+        if(!inter.triggerEventId) return;
+        if(selectedIds.has(ev._id)) isolatedIds.add(inter.triggerEventId);
+        if(selectedIds.has(inter.triggerEventId)) isolatedIds.add(ev._id);
+      });
+    });
+    return events.filter(function(ev){return isolatedIds.has(ev._id);});
+  }
   if(!isFilterActive()) return events.slice();
   var matched=events.filter(_matchesFilter);
   if(!filterConfig.showRelated) return matched;
@@ -201,5 +213,6 @@ function getActiveEvents(){
 }
 function isFilterActive(){
   return !!(filterConfig.text.trim()||filterConfig.systems.length||filterConfig.actors.length||
-    filterConfig.levels.length||filterConfig.eventCodes.length||filterConfig.integrationCodes.length);
+    filterConfig.levels.length||filterConfig.eventCodes.length||filterConfig.integrationCodes.length||
+    filterConfig.eventIds.length);
 }

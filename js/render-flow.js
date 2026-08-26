@@ -229,12 +229,15 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
 
     // Highlight state for this box
     var isBoxSel=selFlowEv&&evId===selectedEventId;
+    var isBoxIsolated=filterConfig.eventIds.indexOf(evId)!==-1;
     var isBoxRel=selFlowEv&&(hlRelIds[evId]||hlRelIds['sys:'+ev.system]);
     var isBoxUnrelated=selFlowEv&&!isBoxSel&&!isBoxRel;
     var boxOpacity=isBoxUnrelated?0.25:1;
 
     // Highlight glow behind box
     if(isBoxSel){
+      aR(g,bx-6,by-6,BW+12,BH+12,{rx:14,fill:'none',stroke:svgColors().hlSel,'stroke-width':3,opacity:.85});
+    } else if(isBoxIsolated){
       aR(g,bx-6,by-6,BW+12,BH+12,{rx:14,fill:'none',stroke:svgColors().hlSel,'stroke-width':3,opacity:.85});
     } else if(isBoxRel){
       aR(g,bx-5,by-5,BW+10,BH+10,{rx:13,fill:'none',stroke:svgColors().hlRel,'stroke-width':2.5,opacity:.8});
@@ -276,6 +279,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
         if(selectedEventId) editEvent(findEventByIdIdx(selectedEventId));
       }
     };})(evId));
+    hitRect.addEventListener('contextmenu',(function(id){return function(ev2){showEventContextMenu(ev2,id);};})(evId));
     g.appendChild(hitRect);
   });
   // Click on SVG background deselects

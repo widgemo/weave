@@ -9,7 +9,8 @@ var FDD_KEYS=[
   {key:'actors', label:'Actors'},
   {key:'levels', label:'Level'},
   {key:'eventCodes', label:'Event Code'},
-  {key:'integrationCodes', label:'Int. Code'}
+  {key:'integrationCodes', label:'Int. Code'},
+  {key:'eventIds', label:'Events'}
 ];
 
 // Maps filter key to the event property name
@@ -17,6 +18,7 @@ var FDD_PROP={systems:'system',actors:'actor',levels:'level',eventCodes:'eventCo
 
 // Build option values for each dropdown from current events
 function getFDDOptions(key){
+  if(key==='eventIds') return events.map(function(ev){return ev._id;});
   var prop=FDD_PROP[key];
   var vals=new Set();
   events.forEach(function(ev){var v=ev[prop]||''; if(v) vals.add(v);});
@@ -43,6 +45,10 @@ function refreshFilterBar(){
         inp.checked=selected.indexOf(val)!==-1;
         inp.addEventListener('change',function(){applyFDDChange(fd.key);});
         var dispVal=(fd.key==='levels'&&LEVEL_LABELS[val])?LEVEL_LABELS[val]:val;
+        if(fd.key==='eventIds'){
+          var event=findEventByIdIdx(val);
+          dispVal=event?trunc(event.desc||'(unnamed event)',40)+' ['+(event.system||'?')+']':val;
+        }
         chk.appendChild(inp);
         chk.appendChild(document.createTextNode(dispVal));
         panel.appendChild(chk);
@@ -69,7 +75,7 @@ function _updateFilterToggleBtn(){
   var active=isFilterActive();
   btn.classList.toggle('filter-toggle-active',active);
   var cnt=filterConfig.systems.length+filterConfig.actors.length+filterConfig.levels.length+
-          filterConfig.eventCodes.length+filterConfig.integrationCodes.length;
+      filterConfig.eventCodes.length+filterConfig.integrationCodes.length+filterConfig.eventIds.length;
   var badge=document.getElementById('filter-badge');
   if(badge){
     badge.textContent=cnt>0?String(cnt):'';
@@ -105,11 +111,27 @@ function clearFilters(){
   filterConfig.levels=[];
   filterConfig.eventCodes=[];
   filterConfig.integrationCodes=[];
+  filterConfig.eventIds=[];
   filterConfig.showRelated=true;
   var inp=document.getElementById('f-text');
   if(inp) inp.value='';
   var chk=document.getElementById('f-show-related');
   if(chk) chk.checked=true;
+  refreshFilterBar();
+  render();
+}
+
+function isolateEvent(eventId){
+  if(findEventByIdIdx(eventId)<0) return;
+  filterConfig.eventIds=[eventId];
+  closeEventContextMenu();
+  refreshFilterBar();
+  render();
+}
+
+function clearEventIsolation(){
+  filterConfig.eventIds=[];
+  closeEventContextMenu();
   refreshFilterBar();
   render();
 }
