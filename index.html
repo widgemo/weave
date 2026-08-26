@@ -506,6 +506,10 @@
           <button class="fdd-btn" id="fdd-btn-integrationCodes" onclick="toggleFDD('integrationCodes',event)">Int. Code <span class="fdd-arrow">&#x25BE;</span></button>
           <div class="fdd-panel" id="fdd-panel-integrationCodes"></div>
         </div>
+        <div class="fdd" id="fdd-eventIds">
+          <button class="fdd-btn" id="fdd-btn-eventIds" onclick="toggleFDD('eventIds',event)">Events <span class="fdd-arrow">&#x25BE;</span></button>
+          <div class="fdd-panel" id="fdd-panel-eventIds"></div>
+        </div>
       </div>
       <button class="btn btn-outline btn-sm fbar-clear" id="fbar-clear" onclick="clearFilters()" title="Clear all filters">&#x2715; Clear</button>
       <label class="fbar-related-label" id="fbar-related-label" title="Also show events linked to matching events via interactions">
@@ -538,6 +542,8 @@
 <div class="toast" id="toast">
   <span id="ticon">&#x2713;</span><span id="tmsg"></span>
 </div>
+
+<div class="event-context-menu" id="event-context-menu" role="menu"></div>
 
 
 <!-- Data Source Config Modal -->

@@ -388,6 +388,7 @@ function renderTimeline(parent,sorted,orientation){
 
     // Highlight state for this node
     var isSel=selEv&&e._id===selEv._id;
+    var isIsolated=filterConfig.eventIds.indexOf(e._id)!==-1;
     var isRelIn=selEv&&hlInIds[e._id];         // source of an incoming arrow
     var isRelTgt=selEv&&hlTgtSystems[e.system]; // in a target system of a FROM arrow
     var isRelated=isRelIn||isRelTgt;
@@ -396,6 +397,8 @@ function renderTimeline(parent,sorted,orientation){
 
     // Draw highlight glow ring behind node
     if(isSel){
+      aC(g,cx,cy,26,{fill:'none',stroke:svgColors().hlSel,'stroke-width':3,opacity:.85});
+    } else if(isIsolated){
       aC(g,cx,cy,26,{fill:'none',stroke:svgColors().hlSel,'stroke-width':3,opacity:.85});
     } else if(isRelated){
       aC(g,cx,cy,24,{fill:'none',stroke:svgColors().hlRel,'stroke-width':2.5,opacity:.8});
@@ -430,6 +433,7 @@ function renderTimeline(parent,sorted,orientation){
         if(selectedEventId) editEvent(findEventByIdIdx(selectedEventId));
       }
     };})(e._id));
+    hitCircle.addEventListener('contextmenu',(function(evId){return function(ev2){showEventContextMenu(ev2,evId);};})(e._id));
     g.appendChild(hitCircle);
   });
   // Click on SVG background deselects

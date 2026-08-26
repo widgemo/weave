@@ -136,6 +136,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .nav-btn svg{width:13px;height:13px;flex-shrink:0}
 .nav-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 
+/* event context menu */
+.event-context-menu{display:none;position:fixed;z-index:300;min-width:150px;padding:4px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.event-context-item{display:block;width:100%;padding:8px 11px;border:0;border-radius:5px;
+  background:transparent;color:var(--text);font:700 .78rem 'Nunito',sans-serif;text-align:left;cursor:pointer}
+.event-context-item:hover{background:var(--surface2);color:var(--accent)}
+
 /* theme toggle button */
 .theme-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
   border-radius:8px;border:1px solid var(--nav-btn-border);background:transparent;

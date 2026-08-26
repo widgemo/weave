@@ -18,6 +18,55 @@ function fileMenuClose(){
   if(menu) menu.style.display='none';
 }
 
+function showEventContextMenu(e,eventId){
+  e.preventDefault();
+  e.stopPropagation();
+  var menu=document.getElementById('event-context-menu');
+  if(!menu) return;
+  menu.innerHTML='';
+  var isFiltered=filterConfig.eventIds.indexOf(eventId)!==-1;
+  function addItem(label,action){
+    var item=document.createElement('button');
+    item.className='event-context-item';
+    item.textContent=label;
+    item.onclick=action;
+    menu.appendChild(item);
+  }
+  if(filterConfig.eventIds.length){
+    if(isFiltered) addItem('Remove Event from Filter',function(){removeEventFromFilter(eventId);});
+    else addItem('Add Event to Filter',function(){addEventToFilter(eventId);});
+    addItem('Show All Events',clearEventIsolation);
+  } else {
+    addItem('Isolate Event',function(){isolateEvent(eventId);});
+  }
+  menu.style.display='block';
+  menu.style.left=Math.min(e.clientX,window.innerWidth-menu.offsetWidth-8)+'px';
+  menu.style.top=Math.min(e.clientY,window.innerHeight-menu.offsetHeight-8)+'px';
+}
+function addEventToFilter(eventId){
+  if(findEventByIdIdx(eventId)<0||filterConfig.eventIds.indexOf(eventId)!==-1) return;
+  filterConfig.eventIds.push(eventId);
+  closeEventContextMenu();
+  refreshFilterBar();
+  render();
+}
+function removeEventFromFilter(eventId){
+  var idx=filterConfig.eventIds.indexOf(eventId);
+  if(idx===-1) return;
+  filterConfig.eventIds.splice(idx,1);
+  closeEventContextMenu();
+  refreshFilterBar();
+  render();
+}
+function closeEventContextMenu(){
+  var menu=document.getElementById('event-context-menu');
+  if(menu) menu.style.display='none';
+}
+document.addEventListener('click',closeEventContextMenu);
+document.addEventListener('contextmenu',function(e){
+  if(!e.target.closest||!e.target.closest('[data-event-hit]')) closeEventContextMenu();
+});
+
 
 // ABOUT MODAL
 function openAbout(){
