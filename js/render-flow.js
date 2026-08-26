@@ -222,6 +222,26 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     aT(g,lmx,lmy+7,String(ar.seqIdx+1),{'text-anchor':'middle','font-size':'7','fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:sysOpacity});
   });
 
+  var interactionStats={};
+  function interactionStat(eventId){
+    if(!interactionStats[eventId]) interactionStats[eventId]={push:{visible:0,total:0},pull:{visible:0,total:0},process:{visible:0,total:0}};
+    return interactionStats[eventId];
+  }
+  function interactionNature(inter){return inter.nature==='pull'||inter.nature==='process'?inter.nature:'push';}
+  events.forEach(function(ev){
+    (ev.interactions||[]).forEach(function(inter){
+      var nature=interactionNature(inter);
+      interactionStat(ev._id)[nature].total++;
+      if(inter.triggerEventId) interactionStat(inter.triggerEventId)[nature].total++;
+    });
+  });
+  sortedEdges.forEach(function(edge){
+    var edgeNature=interactionNature(edge.inter);
+    interactionStat(edge.from)[edgeNature].visible++;
+    interactionStat(edge.to)[edgeNature].visible++;
+  });
+  sysArrows.forEach(function(arrow){interactionStat(arrow.srcEvId)[interactionNature(arrow)].visible++;});
+
   // event boxes
   order.forEach(function(evId,seqIdx){
     var ev=evMap[evId]; if(!ev) return;
@@ -268,9 +288,27 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
       ey+=13;
       if(ev.managedIntegrationCode) aT(g,tx,ey,trunc(ev.managedIntegrationCode,22),{'font-size':'8','fill':svgColors().listInt,'font-family':'DM Mono,monospace',opacity:boxOpacity});
     }
+    var stats=interactionStat(evId);
+    var interactionCount=stats.push.total+stats.pull.total+stats.process.total;
+    var countBadge=sv('g',{cursor:'help','data-event-hit':'1'});
+    aC(countBadge,bx+BW-12,by+BH-12,9,{fill:color,opacity:isBoxUnrelated?0.2:0.9});
+    aT(countBadge,bx+BW-12,by+BH-9,String(interactionCount),{'text-anchor':'middle','font-size':'8','fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:boxOpacity});
+    var tooltipW=142, tooltipH=70, tooltipX=bx+BW+8;
+    if(tooltipX+tooltipW>pW) tooltipX=bx-tooltipW-8;
+    var tooltipY=Math.max(0,Math.min(pH-tooltipH,by+BH-tooltipH));
+    var countTooltip=sv('g',{display:'none','pointer-events':'none'});
+    aR(countTooltip,tooltipX,tooltipY,tooltipW,tooltipH,{rx:6,fill:svgColors().nodeFill,stroke:svgColors().grid,'stroke-width':1});
+    aT(countTooltip,tooltipX+9,tooltipY+14,'Interactions (visible/total)',{'font-size':'8','fill':svgColors().label,'font-family':'DM Mono,monospace','font-weight':'700'});
+    function addTooltipRow(label,rowY,stroke,dash,counts){
+      aL(countTooltip,tooltipX+10,rowY,tooltipX+29,rowY,{stroke:stroke,'stroke-width':2,'stroke-dasharray':dash||''});
+      aT(countTooltip,tooltipX+36,rowY+3,label+' '+counts.visible+'/'+counts.total,{'font-size':'9','fill':svgColors().desc,'font-family':'DM Mono,monospace'});
+    }
+    addTooltipRow('Push',tooltipY+29,svgColors().accent,'',stats.push);
+    addTooltipRow('Pull',tooltipY+46,svgColors().teal,'',stats.pull);
+    addTooltipRow('Process',tooltipY+63,svgColors().proc,'5,4',stats.process);
     // Transparent click overlay — loads event into editor and highlights
     var hitRect=sv('rect',{x:bx,y:by,width:BW,height:BH,rx:9,fill:'transparent',cursor:'pointer','data-event-hit':'1'});
-    hitRect.addEventListener('click',(function(id){return function(ev2){
+    var selectEventHandler=(function(id){return function(ev2){
       if(hitRect.ownerSVGElement._didPan){hitRect.ownerSVGElement._didPan=false;return;}
       ev2.stopPropagation();
       var idx=findEventByIdIdx(id);
@@ -279,9 +317,17 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
         render();
         if(selectedEventId) editEvent(findEventByIdIdx(selectedEventId));
       }
-    };})(evId));
-    hitRect.addEventListener('contextmenu',(function(id){return function(ev2){showEventContextMenu(ev2,id);};})(evId));
+    };})(evId);
+    var contextMenuHandler=(function(id){return function(ev2){showEventContextMenu(ev2,id);};})(evId);
+    hitRect.addEventListener('click',selectEventHandler);
+    hitRect.addEventListener('contextmenu',contextMenuHandler);
+    countBadge.addEventListener('click',selectEventHandler);
+    countBadge.addEventListener('contextmenu',contextMenuHandler);
+    countBadge.addEventListener('mouseenter',(function(tooltip){return function(){tooltip.setAttribute('display','');};})(countTooltip));
+    countBadge.addEventListener('mouseleave',(function(tooltip){return function(){tooltip.setAttribute('display','none');};})(countTooltip));
     g.appendChild(hitRect);
+    g.appendChild(countBadge);
+    g.appendChild(countTooltip);
   });
   // Click on SVG background deselects
   svg.addEventListener('click',function(){
