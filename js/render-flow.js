@@ -222,6 +222,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     aT(g,lmx,lmy+7,String(ar.seqIdx+1),{'text-anchor':'middle','font-size':'7','fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:sysOpacity});
   });
 
+  // New code for card interaction tooltips
   var interactionStats={};
   function interactionStat(eventId){
     if(!interactionStats[eventId]) interactionStats[eventId]={push:{visible:0,total:0},pull:{visible:0,total:0},process:{visible:0,total:0}};
@@ -269,6 +270,8 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
       aR(g,bx,by,26,BH,{rx:9,fill:color,opacity:isBoxUnrelated?0.05:0.15});
       aT(g,bx+13,c.y+4,String(seqIdx+1),{'text-anchor':'middle','font-size':'10','fill':color,'font-weight':'800','font-family':'DM Mono,monospace',opacity:boxOpacity});
     }
+
+    // New code for card interaction tooltip
     var tx=showSeq?bx+30:bx+9;
     var sysLabel=trunc(ev.system,(displayConfig.showLevel&&ev.level)?14:20);
     aT(g,tx,by+17,sysLabel,{'font-size':'8','fill':color,'font-family':'DM Mono,monospace','font-weight':'700',opacity:boxOpacity});
