@@ -425,6 +425,7 @@ function renderTimeline(parent,sorted,orientation){
     // Transparent click overlay — loads event into editor and highlights
     var hitCircle=sv('circle',{cx:cx,cy:cy,r:19,fill:'transparent',cursor:'pointer','data-event-hit':'1'});
     hitCircle.addEventListener('click',(function(evId){return function(ev2){
+      if(hitCircle.ownerSVGElement._didPan){hitCircle.ownerSVGElement._didPan=false;return;}
       ev2.stopPropagation();
       var idx=findEventByIdIdx(evId);
       if(idx>=0){
@@ -438,6 +439,7 @@ function renderTimeline(parent,sorted,orientation){
   });
   // Click on SVG background deselects
   svg.addEventListener('click',function(){
+    if(svg._didPan){svg._didPan=false;return;}
     if(selectedEventId){selectedEventId=null; render();}
   });
   parent.appendChild(svg);

@@ -271,6 +271,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     // Transparent click overlay — loads event into editor and highlights
     var hitRect=sv('rect',{x:bx,y:by,width:BW,height:BH,rx:9,fill:'transparent',cursor:'pointer','data-event-hit':'1'});
     hitRect.addEventListener('click',(function(id){return function(ev2){
+      if(hitRect.ownerSVGElement._didPan){hitRect.ownerSVGElement._didPan=false;return;}
       ev2.stopPropagation();
       var idx=findEventByIdIdx(id);
       if(idx>=0){
@@ -284,6 +285,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
   });
   // Click on SVG background deselects
   svg.addEventListener('click',function(){
+    if(svg._didPan){svg._didPan=false;return;}
     if(selectedEventId){selectedEventId=null; render();}
   });
   parent.appendChild(svg);

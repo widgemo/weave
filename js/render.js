@@ -178,7 +178,7 @@ function _setupPan(){
   var vp=document.querySelector('.cvport');
   if(!vp||vp._panBound) return;
   vp._panBound=true;
-  var panning=false, startX, startY, startScrollX, startScrollY;
+  var panning=false, panSvg=null, startX, startY, startScrollX, startScrollY;
   var panCursorStyle=document.getElementById('_pan-cursor-style');
   if(!panCursorStyle){
     panCursorStyle=document.createElement('style');
@@ -197,6 +197,8 @@ function _setupPan(){
     }
     if(t!==svg) return; // click was outside the SVG entirely
     panning=true;
+    panSvg=svg;
+    svg._didPan=false;
     startX=e.clientX; startY=e.clientY;
     startScrollX=vp.scrollLeft; startScrollY=vp.scrollTop;
     panCursorStyle.textContent='*{cursor:grabbing!important;user-select:none!important}';
@@ -204,7 +206,8 @@ function _setupPan(){
   });
 
   document.addEventListener('mousemove',function(e){
-    if(!panning) return;
+    if(!panning||!panSvg) return;
+    if(Math.abs(e.clientX-startX)>3||Math.abs(e.clientY-startY)>3) panSvg._didPan=true;
     vp.scrollLeft=startScrollX-(e.clientX-startX);
     vp.scrollTop=startScrollY-(e.clientY-startY);
   });
