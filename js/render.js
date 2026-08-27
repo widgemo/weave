@@ -97,6 +97,7 @@ function render(){
         '<h3>No events match filters</h3><p>Adjust or clear the active filters to see events.</p></div>';
     }
     if(typeof updateLegendColors==='function') updateLegendColors();
+    updateScrollArrows();
     if(typeof persistAppState==='function') persistAppState();
     return;
   }
@@ -117,6 +118,8 @@ function render(){
     var _dsvg=_getSvg(); if(_dsvg) _dsvg.setAttribute('cursor','grab');
   }
   if(typeof updateLegendColors==='function') updateLegendColors();
+  _setupScrollArrows();
+  updateScrollArrows();
   if(typeof persistAppState==='function') persistAppState();
 }
 
@@ -132,6 +135,7 @@ function applyDiagramZoom(z){
   svg.setAttribute('height',natH*diagramZoom);
   var zd=document.getElementById('zoom-level');
   if(zd) zd.textContent=Math.round(diagramZoom*100)+'%';
+  updateScrollArrows();
 }
 function getDiagramFitZoom(){
   var vp=document.querySelector('.cvport'), svg=_getSvg();
@@ -217,6 +221,73 @@ function _setupPan(){
     panning=false;
     panCursorStyle.textContent='';
   });
+}
+
+// ── CANVAS SCROLL ARROWS ─────────────────────────────────
+var SCROLL_ARROW_SPEED=7; // px per animation frame while hovering
+var SCROLL_ARROW_TOL=2;   // ignore sub-pixel scroll remainders
+var _scrollArrowRaf=null;
+var SCROLL_ARROW_DIRS=['up','down','left','right'];
+
+function _scrollArrowEl(dir){return document.getElementById('scroll-arrow-'+dir);}
+
+function updateScrollArrows(){
+  var vp=document.querySelector('.cvport');
+  if(!vp) return;
+  var hide=appMode==='table';
+  var maxX=vp.scrollWidth-vp.clientWidth, maxY=vp.scrollHeight-vp.clientHeight;
+  var shown={
+    up:   vp.scrollTop>SCROLL_ARROW_TOL,
+    down: vp.scrollTop<maxY-SCROLL_ARROW_TOL,
+    left: vp.scrollLeft>SCROLL_ARROW_TOL,
+    right:vp.scrollLeft<maxX-SCROLL_ARROW_TOL
+  };
+  SCROLL_ARROW_DIRS.forEach(function(dir){
+    var el=_scrollArrowEl(dir);
+    if(el) el.classList.toggle('scroll-arrow-hidden',hide||!shown[dir]);
+  });
+}
+
+function _stopArrowScroll(){
+  if(_scrollArrowRaf){cancelAnimationFrame(_scrollArrowRaf);_scrollArrowRaf=null;}
+}
+
+function _startArrowScroll(dir){
+  _stopArrowScroll();
+  var vp=document.querySelector('.cvport'); if(!vp) return;
+  var dx=dir==='left'?-SCROLL_ARROW_SPEED:dir==='right'?SCROLL_ARROW_SPEED:0;
+  var dy=dir==='up'?-SCROLL_ARROW_SPEED:dir==='down'?SCROLL_ARROW_SPEED:0;
+  function step(){
+    var prevX=vp.scrollLeft, prevY=vp.scrollTop;
+    vp.scrollLeft=prevX+dx; vp.scrollTop=prevY+dy;
+    // Edge reached — the arrow hides itself, so no mouseleave would arrive
+    if(vp.scrollLeft===prevX&&vp.scrollTop===prevY){_stopArrowScroll();return;}
+    _scrollArrowRaf=requestAnimationFrame(step);
+  }
+  _scrollArrowRaf=requestAnimationFrame(step);
+}
+
+function _jumpToScrollEdge(dir){
+  var vp=document.querySelector('.cvport'); if(!vp) return;
+  if(dir==='up') vp.scrollTop=0;
+  else if(dir==='down') vp.scrollTop=vp.scrollHeight;
+  else if(dir==='left') vp.scrollLeft=0;
+  else vp.scrollLeft=vp.scrollWidth;
+  updateScrollArrows();
+}
+
+function _setupScrollArrows(){
+  var vp=document.querySelector('.cvport');
+  if(!vp||vp._arrowsBound) return;
+  vp._arrowsBound=true;
+  SCROLL_ARROW_DIRS.forEach(function(dir){
+    var el=_scrollArrowEl(dir); if(!el) return;
+    el.addEventListener('mouseenter',function(){_startArrowScroll(dir);});
+    el.addEventListener('mouseleave',_stopArrowScroll);
+    el.addEventListener('click',function(){_stopArrowScroll();_jumpToScrollEdge(dir);});
+  });
+  vp.addEventListener('scroll',updateScrollArrows);
+  window.addEventListener('resize',updateScrollArrows);
 }
 
 // ── LIST VIEW ───────────────────────────────────────────
