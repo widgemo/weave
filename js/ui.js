@@ -467,6 +467,56 @@ function clearAll(){
   },'Delete All','Delete All Events');
 }
 
+// NEW DIAGRAM — resets diagram data and settings, keeps data source/query config
+var DIAGRAM_SETTING_KEYS=['weave-vslider','weave-hslider','weave-timeline-reverse',
+  'weave-date-format','weave-time-format','weave-table-col-widths'];
+
+function newDiagram(){
+  showConfirm(
+    'Start a new diagram? All events, systems, actors and diagram settings will be permanently deleted, '+
+    'including the copy saved in this browser. Export your work first if you want to keep it. '+
+    'Data source and query settings are not affected.',
+    _resetToNewDiagram,'Delete & Start New','New Diagram');
+}
+
+function _resetToNewDiagram(){
+  events=[]; sysOrder={}; systemsRegistry=[]; actorsRegistry=[];
+  levelsRegistry=FIXED_LEVELS.slice(); knownSys.clear();
+  scenName=''; scenDesc='';
+  editIdx=-1; selectedEventId=null; tableSelection.clear();
+
+  diagramZoom=1.0; diagramVSlider=1.0; diagramHSlider=1.0;
+  timelineCompact=true; timelineReverse=false;
+  displayConfig.showLevel=true; displayConfig.showEventCode=true;
+  displayConfig.showManagedIntegrationCode=true; displayConfig.showActor=true;
+  displayConfig.showDate=true; displayConfig.showSeq=true;
+  displayConfig.dateFormat='YYYY-MM-DD'; displayConfig.timeFormat='HH:mm:ss';
+  tableSortCol=null; tableSortDir='asc';
+
+  try{
+    localStorage.removeItem(WEAVE_APP_STATE_KEY);
+    DIAGRAM_SETTING_KEYS.forEach(function(k){localStorage.removeItem(k);});
+  }catch(e){}
+
+  function setVal(id,val){var el=document.getElementById(id); if(el) el.value=val;}
+  function setChk(id,val){var el=document.getElementById(id); if(el) el.checked=val;}
+  setVal('scenario-name',''); setVal('scenario-desc','');
+  setVal('orientation','vertical'); setVal('flow-dir','lr');
+  setVal('dc-date-format','YYYY-MM-DD'); setVal('dc-time-format','HH:mm:ss');
+  setChk('dc-level',true); setChk('dc-event-code',true); setChk('dc-managed-integration-code',true);
+  setChk('dc-actor',true); setChk('dc-show-date',true); setChk('dc-show-seq',true);
+
+  clearForm();
+  clearFilters();
+  initDiagSliders();
+  applyTimelineReverseState();
+  switchAppMode('timeline');
+  refreshDL(); refreshActorDL(); refreshLevelDL();
+  refreshSysOrderUI(); refreshSystemsUI();
+  refreshFilterBar(); render(); updateList();
+  toast('New diagram started','\u2728');
+}
+
 // EVENT LIST
 function updateList(){
   var el=document.getElementById('elist'), n=events.length;
