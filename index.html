@@ -530,6 +530,19 @@
       <div id="diag-hslider-wrap" class="diag-hslider-wrap" title="Horizontal spacing">
         <input type="range" id="diag-hslider" class="diag-hslider" min="50" max="300" value="100" step="5" oninput="onDiagSlider()">
       </div>
+      <!-- Floating scroll arrows: hover to scroll, click to jump to that edge -->
+      <button class="scroll-arrow scroll-arrow-up scroll-arrow-hidden" id="scroll-arrow-up" aria-label="Scroll up" title="Hover to scroll up, click to jump to top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 15 12 9 18 15"/></svg>
+      </button>
+      <button class="scroll-arrow scroll-arrow-down scroll-arrow-hidden" id="scroll-arrow-down" aria-label="Scroll down" title="Hover to scroll down, click to jump to bottom">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <button class="scroll-arrow scroll-arrow-left scroll-arrow-hidden" id="scroll-arrow-left" aria-label="Scroll left" title="Hover to scroll left, click to jump to left edge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 6 9 12 15 18"/></svg>
+      </button>
+      <button class="scroll-arrow scroll-arrow-right scroll-arrow-hidden" id="scroll-arrow-right" aria-label="Scroll right" title="Hover to scroll right, click to jump to right edge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
       <div id="diagram-legend">
         <div class="leg-item"><span class="leg-line" id="leg-push"></span><span class="leg-label">push &#x2192;</span></div>
         <div class="leg-item"><span class="leg-line" id="leg-pull"></span><span class="leg-label">pull &#x2190;</span></div>
