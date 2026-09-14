@@ -360,6 +360,17 @@
           <input type="text" id="ds-query" placeholder="e.g. limit=20&amp;filter=active=true" autocomplete="off">
           <span class="hint">URL query string (key=value pairs separated by &amp;)</span>
         </div>
+        <div class="mgrid" style="margin-top:4px">
+          <div class="fg">
+            <label class="fl">Page Size</label>
+            <input type="number" id="ds-page-size" value="20" min="1" step="1">
+          </div>
+          <div class="fg">
+            <label class="fl">Offset Param Name <span class="hint">(optional)</span></label>
+            <input type="text" id="ds-offset-param" placeholder="e.g. offset, page, sysparm_offset" autocomplete="off">
+          </div>
+        </div>
+        <span class="hint">Set an offset param name to enable Prev/Next paging below.</span>
         <div class="btn-row" style="margin-top:4px">
           <button class="btn btn-p btn-full" onclick="dsRunQuery()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -368,67 +379,72 @@
         </div>
         <div class="sep"></div>
         <div class="sh"><span class="st" style="font-size:.72rem">Field Mapping</span></div>
-        <span class="hint">Map response fields to diagram properties.</span>
+        <span class="hint">Map response fields to diagram properties. Run a query to get field-name suggestions.</span>
+        <datalist id="ds-field-dl"></datalist>
+        <div id="ds-preview" class="ds-preview" style="display:none">
+          <div class="ds-preview-label">Preview (first result)</div>
+          <div id="ds-preview-body"></div>
+        </div>
         <div class="fg" style="margin-top:4px">
           <label class="fl">Description field</label>
-          <input type="text" id="ds-desc-field" placeholder="e.g. name, title, description" autocomplete="off">
+          <input type="text" id="ds-desc-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. name, title, description" autocomplete="off">
         </div>
         <div class="mgrid" style="margin-top:4px">
           <div class="fg">
             <label class="fl">System field</label>
-            <input type="text" id="ds-sys-field" placeholder="e.g. category" autocomplete="off">
+            <input type="text" id="ds-sys-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. category" autocomplete="off">
           </div>
           <div class="fg">
             <label class="fl">Actor field</label>
-            <input type="text" id="ds-actor-field" placeholder="e.g. assigned_to" autocomplete="off">
+            <input type="text" id="ds-actor-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. assigned_to" autocomplete="off">
           </div>
         </div>
         <div class="fg">
           <label class="fl">Timestamp field</label>
-          <input type="text" id="ds-ts-field" placeholder="e.g. created_at" autocomplete="off">
+          <input type="text" id="ds-ts-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. created_at" autocomplete="off">
         </div>
         <div class="mgrid" style="margin-top:4px">
           <div class="fg">
             <label class="fl">Event Code field</label>
-            <input type="text" id="ds-event-code-field" placeholder="e.g. event_type" autocomplete="off">
+            <input type="text" id="ds-event-code-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. event_type" autocomplete="off">
           </div>
           <div class="fg">
             <label class="fl">Level field</label>
-            <input type="text" id="ds-level-field" placeholder="e.g. severity" autocomplete="off">
+            <input type="text" id="ds-level-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. severity" autocomplete="off">
           </div>
         </div>
         <div class="fg">
           <label class="fl">Integration Code field</label>
-          <input type="text" id="ds-integration-code-field" placeholder="e.g. integration_id" autocomplete="off">
+          <input type="text" id="ds-integration-code-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. integration_id" autocomplete="off">
         </div>
         <div class="fg" style="margin-top:4px">
           <label class="fl">Interactions field <span class="hint">(optional)</span></label>
-          <input type="text" id="ds-interactions-field" placeholder="e.g. interactions" autocomplete="off">
+          <input type="text" id="ds-interactions-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. interactions" autocomplete="off">
           <span class="hint">Field containing an array of interaction objects</span>
         </div>
         <div class="mgrid" style="margin-top:4px">
           <div class="fg">
             <label class="fl">&#x21B3; Target field</label>
-            <input type="text" id="ds-int-target-field" placeholder="e.g. target" autocomplete="off">
+            <input type="text" id="ds-int-target-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. target" autocomplete="off">
           </div>
           <div class="fg">
             <label class="fl">&#x21B3; Nature field</label>
-            <input type="text" id="ds-int-nature-field" placeholder="push | pull | process" autocomplete="off">
+            <input type="text" id="ds-int-nature-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="push | pull | process" autocomplete="off">
           </div>
         </div>
         <div class="mgrid" style="margin-top:4px">
           <div class="fg">
             <label class="fl">&#x21B3; Label field</label>
-            <input type="text" id="ds-int-label-field" placeholder="e.g. label" autocomplete="off">
+            <input type="text" id="ds-int-label-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. label" autocomplete="off">
           </div>
           <div class="fg">
             <label class="fl">&#x21B3; Delay field</label>
-            <input type="text" id="ds-int-delay-field" placeholder="e.g. delay" autocomplete="off">
+            <input type="text" id="ds-int-delay-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. delay" autocomplete="off">
           </div>
         </div>
         <div class="fg" style="margin-top:4px">
           <label class="fl">&#x21B3; Order field</label>
-          <input type="text" id="ds-int-order-field" placeholder="e.g. order" autocomplete="off">
+          <input type="text" id="ds-int-order-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. order" autocomplete="off">
         </div>
         <div class="sep"></div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
@@ -447,6 +463,12 @@
         <div class="sh">
           <span class="st" style="font-size:.72rem">Results</span>
           <span id="ds-query-status" class="hint"></span>
+        </div>
+        <div id="ds-query-error" class="ds-query-error" style="display:none"></div>
+        <div id="ds-paging" style="display:none;gap:6px;align-items:center;margin-bottom:6px">
+          <button class="btn btn-outline btn-sm" id="ds-prev-btn" onclick="dsPrevPage()">&#8592; Prev</button>
+          <span id="ds-page-info" class="hint" style="flex:1;text-align:center"></span>
+          <button class="btn btn-outline btn-sm" id="ds-next-btn" onclick="dsNextPage()">Next &#8594;</button>
         </div>
         <button class="btn btn-outline btn-sm btn-full" id="ds-import-all-btn" onclick="dsImportAll()" style="display:none;margin-bottom:6px">
           &#x21E9; Import All to Diagram

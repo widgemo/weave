@@ -224,20 +224,25 @@ new feature out of the same `ui.js` dumping ground it's meant to fix.
   `<script>` includes in `index.html`, just more of them, each named for
   what it actually does.
 
-### 2.4 Data-source importer: UX polish (generic, not ServiceNow-specific)
+### 2.4 Data-source importer: UX polish (generic, not ServiceNow-specific) — **done**
 
-Per explicit direction, keep the importer instance-agnostic rather than
-adding ServiceNow table/journal presets. Worth improving regardless:
+Per explicit direction, kept the importer instance-agnostic rather than
+adding ServiceNow table/journal presets.
 
-- A clearer field-mapping UI (current mapping is a flat set of fields;
-  making the mapping between a query result and an event visually
-  obvious would reduce setup friction for any REST source, ServiceNow
-  included).
-- Inline validation and error surfacing when a query fails or a mapping
-  produces malformed events, instead of failing silently or requiring
-  the log panel to diagnose.
-- Visible pagination controls for large result sets, since ServiceNow
-  tables (and Integration Events history) can be large.
+- **Clearer field-mapping UI**: every mapping input now offers `<datalist>`
+  autocomplete populated from the actual field names seen in the last query's
+  results (free typing still works), plus a live preview card showing how
+  the first result maps to an event as the mapping is edited.
+- **Inline validation and error surfacing**: query-time HTTP/network failures
+  and a "not connected" response now show a clear inline message in the
+  panel itself (additive to the existing global banner/log trail), and any
+  result whose mapped System would be blank is visibly flagged on its own
+  card — still importable, just unmistakably marked rather than silently
+  producing a broken event.
+- **Visible pagination**: a configurable Page Size + Offset Param Name (the
+  user names their own API's convention, e.g. `sysparm_offset` or `offset`)
+  drive Prev/Next controls that auto-disable on a short last page — no
+  hardcoded API convention, no total-count assumption.
 
 ### 2.5 Other gaps identified, not yet prioritized
 
