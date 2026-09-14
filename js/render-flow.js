@@ -317,11 +317,12 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     countBadge.addEventListener('mouseenter',(function(tooltip){return function(){tooltip.setAttribute('display','');};})(countTooltip));
     countBadge.addEventListener('mouseleave',(function(tooltip){return function(){tooltip.setAttribute('display','none');};})(countTooltip));
 
-    // Drag this node's hit-rect either across lanes (system reassignment) or
-    // along the causal-order axis (manual sequence override), depending on
-    // which direction the user actually drags once past the threshold.
+    // Drag this node's hit-rect to reassign its lane (system) and/or reorder
+    // it along the causal-order axis -- both are always live from the same
+    // drop point (they're orthogonal axes of bC()'s grid), so a single drag
+    // can change either, both together, or (if dropped back at its own
+    // effective slot) neither, and can be repeated indefinitely.
     (function(evId,ev,color){
-      // ── Lane-reassign ──
       function systemAtPoint(gx,gy){
         var row=isLR?Math.round((gy-BH/2-20)/LG):Math.round((gx-BW/2-20)/SG);
         if(row<0||row>=sysArr.length) return null;
@@ -331,40 +332,6 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
         var row=sysArr.indexOf(sysName); if(row<0) return null;
         return isLR?{x:0,y:row*LG,w:pW,h:LG}:{x:row*SG,y:0,w:SG,h:pH};
       }
-      var laneHL=null;
-      function updateLaneHL(gx,gy){
-        var r=laneRectFor(systemAtPoint(gx,gy));
-        if(!r){laneHL.setAttribute('width',0);laneHL.setAttribute('height',0);return;}
-        laneHL.setAttribute('x',r.x);laneHL.setAttribute('y',r.y);
-        laneHL.setAttribute('width',r.w);laneHL.setAttribute('height',r.h);
-      }
-      function laneOnStart(gx,gy){
-        laneHL=sv('rect',{x:0,y:0,width:0,height:0,fill:svgColors().hlSel,opacity:0.15,'pointer-events':'none'});
-        g.appendChild(laneHL);
-        var ghost=sv('rect',{x:gx-BW/2,y:gy-BH/2,width:BW,height:BH,rx:9,
-          fill:color,stroke:color,'stroke-width':2,opacity:0.4,'pointer-events':'none'});
-        g.appendChild(ghost);
-        updateLaneHL(gx,gy);
-        return ghost;
-      }
-      function laneOnMove(ghost,gx,gy){
-        ghost.setAttribute('x',gx-BW/2); ghost.setAttribute('y',gy-BH/2);
-        updateLaneHL(gx,gy);
-      }
-      function laneOnDrop(ghost,gx,gy){
-        if(ghost.parentNode) ghost.parentNode.removeChild(ghost);
-        if(laneHL&&laneHL.parentNode) laneHL.parentNode.removeChild(laneHL);
-        var newSys=systemAtPoint(gx,gy);
-        if(!newSys||newSys===ev.system) return;
-        var idx=findEventByIdIdx(evId); if(idx<0) return;
-        events[idx].system=newSys;
-        knownSys.add(newSys);
-        if(editIdx===idx) editEvent(idx);
-        render(); updateList(); refreshDL();
-        toast('Moved to '+newSys,'↕');
-      }
-
-      // ── Sequence-reorder ──
       // Gap index k (0..order.length) sits immediately before order[k];
       // gap order.length is "after the last node". Anchor = nearest event
       // preceding that gap, skipping the dragged node's own (pre-drop)
@@ -382,8 +349,15 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
         for(var i=pos-1;i>=0;i--){ if(order[i]!==evId) return order[i]; }
         return '';
       }
-      var seqLine=null;
-      function updateSeqLine(gx,gy){
+
+      var laneHL=null, seqLine=null;
+      function updateGuides(gx,gy){
+        var r=laneRectFor(systemAtPoint(gx,gy));
+        if(!r){laneHL.setAttribute('width',0);laneHL.setAttribute('height',0);}
+        else{
+          laneHL.setAttribute('x',r.x);laneHL.setAttribute('y',r.y);
+          laneHL.setAttribute('width',r.w);laneHL.setAttribute('height',r.h);
+        }
         var gap=gapIndexAtPoint(gx,gy);
         if(isLR){
           var lx=gap*SG+20-SG/2+BW/2;
@@ -395,47 +369,40 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
           seqLine.setAttribute('x1',-10); seqLine.setAttribute('x2',pW+10);
         }
       }
-      function seqOnStart(gx,gy){
-        seqLine=sv('line',{stroke:svgColors().hlSel,'stroke-width':2,'stroke-dasharray':'5,3','pointer-events':'none'});
-        g.appendChild(seqLine);
-        var ghost=sv('rect',{x:gx-BW/2,y:gy-BH/2,width:BW,height:BH,rx:9,
-          fill:color,stroke:color,'stroke-width':2,opacity:0.4,'pointer-events':'none'});
-        g.appendChild(ghost);
-        updateSeqLine(gx,gy);
-        return ghost;
-      }
-      function seqOnMove(ghost,gx,gy){
-        ghost.setAttribute('x',gx-BW/2); ghost.setAttribute('y',gy-BH/2);
-        updateSeqLine(gx,gy);
-      }
-      function seqOnDrop(ghost,gx,gy){
-        if(ghost.parentNode) ghost.parentNode.removeChild(ghost);
-        if(seqLine&&seqLine.parentNode) seqLine.parentNode.removeChild(seqLine);
-        var newAnchor=anchorForGap(gapIndexAtPoint(gx,gy));
-        if(newAnchor===currentAnchorId()) return; // dropped at its own effective slot
-        var idx=findEventByIdIdx(evId); if(idx<0) return;
-        events[idx].layoutAfterId=newAnchor;
-        render(); updateList();
-        toast('Sequence order overridden','⇥');
-      }
 
-      // ── Axis dispatcher ──
-      // Decide once, at threshold-crossing, which gesture this is (based on
-      // movement direction from the node's home spot `c`), then delegate
-      // every subsequent callback to that gesture's handlers for the rest
-      // of the drag.
       setupNodeDrag(hitRect,{
         svg:svg, mg:mg,
         onStart:function(gx,gy){
-          var dx=gx-c.x, dy=gy-c.y;
-          var mode=(isLR?Math.abs(dx)>Math.abs(dy):Math.abs(dy)>Math.abs(dx))?'seq':'lane';
-          return {mode:mode, inner:mode==='seq'?seqOnStart(gx,gy):laneOnStart(gx,gy)};
+          laneHL=sv('rect',{x:0,y:0,width:0,height:0,fill:svgColors().hlSel,opacity:0.15,'pointer-events':'none'});
+          g.appendChild(laneHL);
+          seqLine=sv('line',{stroke:svgColors().hlSel,'stroke-width':2,'stroke-dasharray':'5,3','pointer-events':'none'});
+          g.appendChild(seqLine);
+          var ghost=sv('rect',{x:gx-BW/2,y:gy-BH/2,width:BW,height:BH,rx:9,
+            fill:color,stroke:color,'stroke-width':2,opacity:0.4,'pointer-events':'none'});
+          g.appendChild(ghost);
+          updateGuides(gx,gy);
+          return ghost;
         },
-        onMove:function(handle,gx,gy){
-          if(handle.mode==='seq') seqOnMove(handle.inner,gx,gy); else laneOnMove(handle.inner,gx,gy);
+        onMove:function(ghost,gx,gy){
+          ghost.setAttribute('x',gx-BW/2); ghost.setAttribute('y',gy-BH/2);
+          updateGuides(gx,gy);
         },
-        onDrop:function(handle,gx,gy){
-          if(handle.mode==='seq') seqOnDrop(handle.inner,gx,gy); else laneOnDrop(handle.inner,gx,gy);
+        onDrop:function(ghost,gx,gy){
+          if(ghost.parentNode) ghost.parentNode.removeChild(ghost);
+          if(laneHL.parentNode) laneHL.parentNode.removeChild(laneHL);
+          if(seqLine.parentNode) seqLine.parentNode.removeChild(seqLine);
+          var idx=findEventByIdIdx(evId); if(idx<0) return;
+          var newSys=systemAtPoint(gx,gy);
+          var newAnchor=anchorForGap(gapIndexAtPoint(gx,gy));
+          var sysChanged=!!newSys&&newSys!==ev.system;
+          var seqChanged=newAnchor!==currentAnchorId();
+          if(!sysChanged&&!seqChanged) return; // dropped back at its own effective slot
+          var msgs=[];
+          if(sysChanged){ events[idx].system=newSys; knownSys.add(newSys); msgs.push('moved to '+newSys); }
+          if(seqChanged){ events[idx].layoutAfterId=newAnchor; msgs.push('order updated'); }
+          if(editIdx===idx) editEvent(idx);
+          render(); updateList(); refreshDL();
+          toast(msgs.join(', '),'↕');
         }
       });
     })(evId,ev,color);
