@@ -22,6 +22,32 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     edges.filter(function(ed){return ed.from===nid;}).forEach(function(ed){if(--inDeg[ed.to]===0)queue.push(ed.to);});
   }
   evList.forEach(function(e){if(!vis.has(e._id)) order.push(e._id);});
+
+  // ── Manual sequence-position overrides ──
+  // Post-process the topo order: any event with layoutAfterId set is spliced
+  // out of its current slot and reinserted immediately after its anchor's
+  // CURRENT position ('' or null anchor = pin to the very front). Processed
+  // in original topo order (origOrder, a fixed snapshot) for determinism —
+  // this also makes the pass safe against override cycles (A after B, B
+  // after A): each event moves exactly once, so the loop always terminates
+  // regardless of cycles. A dangling anchor (event deleted, or no longer in
+  // `order`) is left where the topo sort put it.
+  var origOrder=order.slice();
+  origOrder.forEach(function(id){
+    var ev=evMap[id];
+    if(!ev||ev.layoutAfterId===undefined) return;
+    var curPos=order.indexOf(id); if(curPos<0) return;
+    var anchor=ev.layoutAfterId;
+    if(anchor===''||anchor===null){
+      order.splice(curPos,1); order.unshift(id); return;
+    }
+    if(anchor===id) return; // can't anchor after itself
+    order.splice(curPos,1);
+    var anchorPos=order.indexOf(anchor); // recompute post-removal
+    if(anchorPos<0){ order.splice(curPos,0,id); return; } // dangling anchor — put back, no-op
+    order.splice(anchorPos+1,0,id);
+  });
+
   var isLR=direction==='lr';
   var seqOf={}; order.forEach(function(id,i){seqOf[id]=i;});
   var rowOf={}; evList.forEach(function(e){rowOf[e._id]=sysArr.indexOf(e.system);});
@@ -233,6 +259,9 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
       aR(g,bx,by,26,BH,{rx:9,fill:color,opacity:isBoxUnrelated?0.05:0.15});
       aT(g,bx+13,c.y+4,String(seqIdx+1),{'text-anchor':'middle','font-size':'10','fill':color,'font-weight':'800','font-family':'DM Mono,monospace',opacity:boxOpacity});
     }
+    if(ev.layoutAfterId!==undefined){
+      aC(g,bx+9,by+8,4.5,{fill:svgColors().hlSel,stroke:svgColors().nodeFill,'stroke-width':1,opacity:boxOpacity});
+    }
 
     // New code for card interaction tooltip
     var tx=showSeq?bx+30:bx+9;
@@ -288,7 +317,11 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     countBadge.addEventListener('mouseenter',(function(tooltip){return function(){tooltip.setAttribute('display','');};})(countTooltip));
     countBadge.addEventListener('mouseleave',(function(tooltip){return function(){tooltip.setAttribute('display','none');};})(countTooltip));
 
-    // Drag this node's hit-rect to a different lane to reassign its system.
+    // Drag this node's hit-rect to reassign its lane (system) and/or reorder
+    // it along the causal-order axis -- both are always live from the same
+    // drop point (they're orthogonal axes of bC()'s grid), so a single drag
+    // can change either, both together, or (if dropped back at its own
+    // effective slot) neither, and can be repeated indefinitely.
     (function(evId,ev,color){
       function systemAtPoint(gx,gy){
         var row=isLR?Math.round((gy-BH/2-20)/LG):Math.round((gx-BW/2-20)/SG);
@@ -299,39 +332,77 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
         var row=sysArr.indexOf(sysName); if(row<0) return null;
         return isLR?{x:0,y:row*LG,w:pW,h:LG}:{x:row*SG,y:0,w:SG,h:pH};
       }
-      var dragHL=null;
-      function updateHL(gx,gy){
-        var r=laneRectFor(systemAtPoint(gx,gy));
-        if(!r){dragHL.setAttribute('width',0);dragHL.setAttribute('height',0);return;}
-        dragHL.setAttribute('x',r.x);dragHL.setAttribute('y',r.y);
-        dragHL.setAttribute('width',r.w);dragHL.setAttribute('height',r.h);
+      // Gap index k (0..order.length) sits immediately before order[k];
+      // gap order.length is "after the last node". Anchor = nearest event
+      // preceding that gap, skipping the dragged node's own (pre-drop)
+      // slot in `order` so it can never end up anchored after itself.
+      function gapIndexAtPoint(gx,gy){
+        var raw=isLR?(gx-BW/2-20)/SG:(gy-BH/2-20)/LG;
+        return Math.max(0,Math.min(order.length,Math.round(raw)));
       }
+      function anchorForGap(gapIdx){
+        for(var i=gapIdx-1;i>=0;i--){ if(order[i]!==evId) return order[i]; }
+        return ''; // nothing precedes -> pin to front
+      }
+      function currentAnchorId(){
+        var pos=order.indexOf(evId);
+        for(var i=pos-1;i>=0;i--){ if(order[i]!==evId) return order[i]; }
+        return '';
+      }
+
+      var laneHL=null, seqLine=null;
+      function updateGuides(gx,gy){
+        var r=laneRectFor(systemAtPoint(gx,gy));
+        if(!r){laneHL.setAttribute('width',0);laneHL.setAttribute('height',0);}
+        else{
+          laneHL.setAttribute('x',r.x);laneHL.setAttribute('y',r.y);
+          laneHL.setAttribute('width',r.w);laneHL.setAttribute('height',r.h);
+        }
+        var gap=gapIndexAtPoint(gx,gy);
+        if(isLR){
+          var lx=gap*SG+20-SG/2+BW/2;
+          seqLine.setAttribute('x1',lx); seqLine.setAttribute('x2',lx);
+          seqLine.setAttribute('y1',-10); seqLine.setAttribute('y2',pH+10);
+        } else {
+          var ly=gap*LG+20-LG/2+BH/2;
+          seqLine.setAttribute('y1',ly); seqLine.setAttribute('y2',ly);
+          seqLine.setAttribute('x1',-10); seqLine.setAttribute('x2',pW+10);
+        }
+      }
+
       setupNodeDrag(hitRect,{
         svg:svg, mg:mg,
         onStart:function(gx,gy){
-          dragHL=sv('rect',{x:0,y:0,width:0,height:0,fill:svgColors().hlSel,opacity:0.15,'pointer-events':'none'});
-          g.appendChild(dragHL);
+          laneHL=sv('rect',{x:0,y:0,width:0,height:0,fill:svgColors().hlSel,opacity:0.15,'pointer-events':'none'});
+          g.appendChild(laneHL);
+          seqLine=sv('line',{stroke:svgColors().hlSel,'stroke-width':2,'stroke-dasharray':'5,3','pointer-events':'none'});
+          g.appendChild(seqLine);
           var ghost=sv('rect',{x:gx-BW/2,y:gy-BH/2,width:BW,height:BH,rx:9,
             fill:color,stroke:color,'stroke-width':2,opacity:0.4,'pointer-events':'none'});
           g.appendChild(ghost);
-          updateHL(gx,gy);
+          updateGuides(gx,gy);
           return ghost;
         },
         onMove:function(ghost,gx,gy){
           ghost.setAttribute('x',gx-BW/2); ghost.setAttribute('y',gy-BH/2);
-          updateHL(gx,gy);
+          updateGuides(gx,gy);
         },
         onDrop:function(ghost,gx,gy){
           if(ghost.parentNode) ghost.parentNode.removeChild(ghost);
-          if(dragHL&&dragHL.parentNode) dragHL.parentNode.removeChild(dragHL);
-          var newSys=systemAtPoint(gx,gy);
-          if(!newSys||newSys===ev.system) return;
+          if(laneHL.parentNode) laneHL.parentNode.removeChild(laneHL);
+          if(seqLine.parentNode) seqLine.parentNode.removeChild(seqLine);
           var idx=findEventByIdIdx(evId); if(idx<0) return;
-          events[idx].system=newSys;
-          knownSys.add(newSys);
+          var newSys=systemAtPoint(gx,gy);
+          var newAnchor=anchorForGap(gapIndexAtPoint(gx,gy));
+          var sysChanged=!!newSys&&newSys!==ev.system;
+          var seqChanged=newAnchor!==currentAnchorId();
+          if(!sysChanged&&!seqChanged) return; // dropped back at its own effective slot
+          var msgs=[];
+          if(sysChanged){ events[idx].system=newSys; knownSys.add(newSys); msgs.push('moved to '+newSys); }
+          if(seqChanged){ events[idx].layoutAfterId=newAnchor; msgs.push('order updated'); }
           if(editIdx===idx) editEvent(idx);
           render(); updateList(); refreshDL();
-          toast('Moved to '+newSys,'↕');
+          toast(msgs.join(', '),'↕');
         }
       });
     })(evId,ev,color);

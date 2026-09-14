@@ -22,9 +22,22 @@ function showEventContextMenu(e,eventId){
   } else {
     addItem('Isolate Event',function(){isolateEvent(eventId);});
   }
+  if(appMode==='flow'){
+    var flIdx=findEventByIdIdx(eventId);
+    if(flIdx>=0&&events[flIdx].layoutAfterId!==undefined){
+      addItem('Reset Order to Automatic',function(){resetEventOrderOverride(eventId);});
+    }
+  }
   menu.style.display='block';
   menu.style.left=Math.min(e.clientX,window.innerWidth-menu.offsetWidth-8)+'px';
   menu.style.top=Math.min(e.clientY,window.innerHeight-menu.offsetHeight-8)+'px';
+}
+function resetEventOrderOverride(eventId){
+  var idx=findEventByIdIdx(eventId); if(idx<0) return;
+  delete events[idx].layoutAfterId;
+  closeEventContextMenu();
+  render(); updateList();
+  toast('Order reset to automatic','↺');
 }
 function addEventToFilter(eventId){
   if(findEventByIdIdx(eventId)<0||filterConfig.eventIds.indexOf(eventId)!==-1) return;

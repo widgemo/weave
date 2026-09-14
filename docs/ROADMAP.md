@@ -134,7 +134,12 @@ for large result sets), not new ServiceNow-aware logic.
 
 ## 2. Recommended direction for v2
 
-### 2.1 UX redesign: contextual inspector panel
+### 2.1 UX redesign: contextual inspector panel — **core mechanism done**
+
+The click-to-inspect empty/form toggle described below shipped as the
+"Inspector" tab. Still open: moving Registry management to a lighter-weight
+surface, and separating the Diagram tab's display controls further —
+neither was in scope for the initial pass.
 
 Replace the permanently-open Add/Edit tab with **click-to-inspect**:
 clicking a node/event on the canvas opens a focused panel scoped to that
@@ -161,26 +166,33 @@ clicked" from "configure how everything looks" from "manage systems and
 actors" from "connect to a data source" gives each its own moment instead
 of five competing tabs.
 
-### 2.2 Drag-and-drop: order/lane override
+### 2.2 Drag-and-drop: order/lane override — **done**
 
 Scoped intentionally to **override, not replace** the automatic layout —
 full freeform positioning was considered and set aside in favor of this
 lighter approach, which keeps diagrams visually consistent while still
 giving authors a way to fix a layout that doesn't read well automatically.
 
-- **Flow mode**: dragging a node horizontally overrides its position in
-  the topo-sorted sequence. Store this as an explicit per-event override
-  (e.g. a `seqOverride` field) that `renderFlow`'s topo sort consults
-  before falling back to computed order — so clearing the override always
-  gets you back to a sane default.
-- **Both modes**: dragging a node vertically between lanes reassigns its
-  `system` — functionally the same as editing the system field in the
-  inspector, just done directly on canvas. This reuses the existing
-  `sysOrder`/`getSysArray()` machinery in `state.js` rather than adding a
-  parallel positioning system.
+- **Both modes**: dragging a node across lanes reassigns its `system` —
+  functionally the same as editing the system field in the inspector, just
+  done directly on canvas. Reuses the existing `sysOrder`/`getSysArray()`
+  machinery in `state.js` rather than adding a parallel positioning system.
+- **Flow mode**: dragging a node along the causal-order axis overrides its
+  position in the topo-sorted sequence, stored as an event field
+  (`layoutAfterId`, an anchor-based override — "place this event immediately
+  after event X" — rather than an absolute rank, since that's both what the
+  drag gesture naturally produces and more stable under insertions) that
+  `renderFlow`'s topo sort consults before falling back to computed order.
+  Reset back to automatic via a "Reset Order to Automatic" item in the
+  existing right-click context menu; overridden nodes show a small pin badge.
+  A single drag gesture on a node dispatches to lane-reassign or
+  sequence-override depending on which axis the user actually drags.
 - The existing sidebar event-list drag-to-reorder (Flow mode only,
-  `js/ui.js:541-560`) is related prior art for the interaction pattern,
-  and is a reasonable candidate to retire once on-canvas dragging exists
+  `js/ui-sidebar.js`, `updateList()`) was deliberately left alone — it
+  reorders the underlying `events[]` array, which only affects the
+  *fallback* position of edgeless/unvisited nodes and is always superseded
+  by a `layoutAfterId` override where one is set, so the two coexist without
+  conflict. Retiring it remains a candidate for later, lower-priority cleanup
   — two ways to do the same thing would be redundant.
 - Always keep a visible "reset to automatic layout" affordance per node
   or globally, so overrides don't become a one-way trip.
