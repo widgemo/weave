@@ -117,6 +117,15 @@ function refreshDL(){
 }
 
 // EVENT LIST
+// Edits an event picked from the Events-tab list, also selecting it on canvas
+// so the highlight matches. (editEvent() itself deliberately doesn't touch
+// selectedEventId, since Table mode calls editEvent() directly and must not
+// gain a canvas-highlighting side effect.)
+function selectEventFromList(idx){
+  var e=events[idx];
+  if(e&&selectedEventId!==e._id){selectedEventId=e._id; render();}
+  editEvent(idx);
+}
 function updateList(){
   var el=document.getElementById('elist'), n=events.length;
   document.getElementById('ecount').textContent=n+' event'+(n!==1?'s':'');
@@ -135,7 +144,7 @@ function updateList(){
     div.innerHTML='<div class="edesc">'+dragHandle+esc(e.desc)+'</div>'+
       '<div class="emeta">'+meta+'</div>'+
       '<div class="emeta" style="margin-top:3px">'+((e.interactions||[]).length?'↔ '+e.interactions.length+' interaction(s)':'No interactions')+'</div>'+
-      '<div class="eacts"><button class="btn btn-g btn-sm" onclick="editEvent('+ri+');event.stopPropagation()">Edit</button>'+
+      '<div class="eacts"><button class="btn btn-g btn-sm" onclick="selectEventFromList('+ri+');event.stopPropagation()">Edit</button>'+
       '<button class="btn btn-d btn-sm" onclick="deleteEvent('+ri+');event.stopPropagation()">Delete</button></div>';
     if(appMode==='flow'){
       div.draggable=true;
@@ -157,7 +166,7 @@ function updateList(){
         render();updateList();
       });
     }
-    div.onclick=function(){editEvent(ri);}; el.appendChild(div);
+    div.onclick=function(){selectEventFromList(ri);}; el.appendChild(div);
   });
 }
 
@@ -232,6 +241,7 @@ document.addEventListener('DOMContentLoaded',function(){
   applyStoredTheme();
   initTimezone();
   switchAppMode('timeline'); refreshDL(); refreshActorDL(); refreshLevelDL(); updateList(); render();
+  _updateInspectorEmptyState();
   initLegend();
   applyTimelineReverseState();
   initDiagSliders();

@@ -277,12 +277,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     var selectEventHandler=(function(id){return function(ev2){
       if(hitRect.ownerSVGElement._didPan){hitRect.ownerSVGElement._didPan=false;return;}
       ev2.stopPropagation();
-      var idx=findEventByIdIdx(id);
-      if(idx>=0){
-        selectedEventId=(selectedEventId===id)?null:id;
-        render();
-        if(selectedEventId) editEvent(findEventByIdIdx(selectedEventId));
-      }
+      handleCanvasNodeClick(id);
     };})(evId);
     var contextMenuHandler=(function(id){return function(ev2){showEventContextMenu(ev2,id);};})(evId);
     hitRect.addEventListener('click',selectEventHandler);
@@ -296,9 +291,6 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     g.appendChild(countTooltip);
   });
   // Click on SVG background deselects
-  svg.addEventListener('click',function(){
-    if(svg._didPan){svg._didPan=false;return;}
-    if(selectedEventId){selectedEventId=null; render();}
-  });
+  svg.addEventListener('click',function(){handleCanvasBackgroundDeselect(svg);});
   parent.appendChild(svg);
 }
