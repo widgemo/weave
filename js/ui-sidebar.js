@@ -257,6 +257,9 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('about-modal').addEventListener('click',function(e){
     if(e.target===this) closeAbout();
   });
+  document.getElementById('shortcuts-modal').addEventListener('click',function(e){
+    if(e.target===this) closeShortcutsHelp();
+  });
   document.getElementById('confirm-modal').addEventListener('click',function(e){
     if(e.target===this) closeConfirm();
   });

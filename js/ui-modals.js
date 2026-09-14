@@ -75,6 +75,15 @@ function closeAbout(){
 }
 
 
+// KEYBOARD SHORTCUTS HELP MODAL
+function openShortcutsHelp(){
+  document.getElementById('shortcuts-modal').classList.add('open');
+}
+function closeShortcutsHelp(){
+  document.getElementById('shortcuts-modal').classList.remove('open');
+}
+
+
 // CONFIRM MODAL
 var _confirmCb=null;
 function showConfirm(msg,onOk,okLabel,title){
