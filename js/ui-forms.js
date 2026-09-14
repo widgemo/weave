@@ -23,10 +23,10 @@ function updateSaveBtnLabel(){
   btn.innerHTML=SAVE_EVENT_SVG+(hasInts?'Save Event &amp; Interactions':'Save Event');
 }
 
-function addIField(tgt,delay,nature,trigEvt,order,label){
+function addIField(tgt,delay,nature,trigEvt,order,label,manual){
   tgt=tgt||'';
   if(delay===undefined||delay===null||delay==='') delay='';
-  nature=nature||'push'; trigEvt=trigEvt||'';
+  nature=nature||'push'; trigEvt=trigEvt||''; manual=!!manual;
   iCount++; var id=iCount;
   var c=document.getElementById('ic'), b=document.createElement('div');
   b.className='iblock'; b.id='ib-'+id; b.dataset.id=id;
@@ -58,6 +58,8 @@ function addIField(tgt,delay,nature,trigEvt,order,label){
     '<label class="fl" id="dlbl-'+id+'">Delay (ms)</label>'+
     '<input type="number" id="dl-'+id+'" value="'+delay+'" min="0" placeholder="0"></div>'+
     '</div>'+
+    '<div class="fg"><label class="tchk"><input type="checkbox" id="mn-'+id+'"'+(manual?' checked':'')+'> Manual</label>'+
+    '<span class="hint" style="margin-top:3px">Check if a person performed this interaction, rather than an automated trigger.</span></div>'+
     '<div class="fg" id="tr-'+id+'" style="'+(appMode==='timeline'?'display:none':'')+'">'+
     '<label class="fl">Triggers Event (Flow mode)</label>'+
     '<select id="te-'+id+'"></select>'+
@@ -164,7 +166,8 @@ function saveEvent(){
     var nt=(document.getElementById('nt-'+id)||{}).value||'push';
     var te=(document.getElementById('te-'+id)||{}).value||'';
     var ilbl=(document.getElementById('ilbl-'+id)||{}).value||'';
-    if(tval){knownSys.add(tval);ints.push({target:tval,delay:dl,nature:nt,triggerEventId:te,order:iOrder++,label:ilbl.trim()});}
+    var mn=(document.getElementById('mn-'+id)||{}).checked||false;
+    if(tval){knownSys.add(tval);ints.push({target:tval,delay:dl,nature:nt,triggerEventId:te,order:iOrder++,label:ilbl.trim(),manual:mn||undefined});}
   });
   var ev={
     _id:editIdx>=0?events[editIdx]._id:'evt-'+Date.now(),
@@ -193,7 +196,7 @@ function editEvent(idx){
   if(e.timestampStr||e.timestamp) document.getElementById('ts').value=toDTL(e.timestampStr||new Date(e.timestamp).toISOString());
   clearI();
   var sortedInts=[...( e.interactions||[])].sort(function(a,b){return (a.order||0)-(b.order||0);});
-  sortedInts.forEach(function(i,idx){addIField(i.target,i.delay||0,i.nature,i.triggerEventId||'',idx,i.label||'');});
+  sortedInts.forEach(function(i,idx){addIField(i.target,i.delay||0,i.nature,i.triggerEventId||'',idx,i.label||'',i.manual);});
   document.getElementById('cancel-edit').style.display='inline-flex';
   _updateInspectorEmptyState();
   updateList();

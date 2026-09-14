@@ -114,7 +114,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     var color=natureColor(ed.inter.nature);
     causalArrows.push({
       sx:src.x,sy:src.y,tx:dst.x,ty:dst.y,
-      nature:ed.inter.nature,color:color,isPull:ed.inter.nature==='pull',
+      nature:ed.inter.nature,manual:!!ed.inter.manual,color:color,isPull:ed.inter.nature==='pull',
       label:ed.inter.label||'',seqLabel:ed._seqLabel,_offset:0,
       fromId:ed.from, toId:ed.to, edIdx:edIdx
     });
@@ -148,7 +148,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
 
     aL(g,p1.x,p1.y,p2.x,p2.y,{
       stroke:strokeColor,'stroke-width':strokeW,
-      'stroke-dasharray':ar.nature==='process'?'5,4':'',
+      'stroke-dasharray':interactionDasharray(ar.nature,ar.manual,'5,4'),
       'marker-end':mEnd, opacity:opacity
     });
 

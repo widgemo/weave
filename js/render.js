@@ -132,6 +132,15 @@ function clipToShape(from,to,shape){
 function natureColor(nature){
   return nature==='push'?svgColors().accent:nature==='pull'?svgColors().teal:svgColors().proc;
 }
+// Stroke-dasharray for an interaction line: layers the "manual" dash on top
+// of the existing nature-driven dash (process), rather than replacing it.
+// processDash lets each renderer keep its own process dash length (flow
+// uses '5,4', timeline uses '5,3').
+function interactionDasharray(nature,manual,processDash){
+  processDash=processDash||'5,4';
+  if(nature==='process') return manual?'5,2,1,2':processDash;
+  return manual?'1,3':'';
+}
 // Draws a filled circle badge with centered white sequence-number text.
 // (cx,cy) is the circle center; textDy is the text baseline offset from cy.
 function drawSeqBadge(g,cx,cy,r,color,label,fontSize,textDy,circleOpacity,textOpacity){

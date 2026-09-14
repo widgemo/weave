@@ -244,6 +244,35 @@ adding ServiceNow table/journal presets.
   drive Prev/Next controls that auto-disable on a short last page — no
   hardcoded API convention, no total-count assumption.
 
+### 2.6 Terminology genericity + automatic/manual interaction flag — **done**
+
+A review of every event-attribute and interaction label flagged a few that
+read as ServiceNow-specific jargon or were inconsistent across the app, and
+a gap in the interaction model: there was no way to record whether an
+interaction happened automatically (a business rule, a scheduled job) or was
+performed manually (a person ran a script, updated a record by hand) —
+distinctions that matter both for diagramming current-state integrations and
+for troubleshooting from timeline data.
+
+- **Labels renamed (display text only — every stored key/value is
+  unchanged, zero migration risk)**: the `work_note` Event Level now
+  displays as "Internal Note" instead of "Work Note"; "Managed Integration
+  Code" (previously inconsistent with the "Integration Code" label used
+  everywhere else the same field appears) is now just "Integration Code"
+  everywhere.
+- **New `manual` field on interactions**, independent of the existing
+  `nature` (push/pull/process) field: a boolean, defaulting to
+  absent/`false` (automatic) so every existing interaction is unaffected.
+  Set via a "Manual" checkbox on each interaction in the event form.
+- **Distinct line style for manual interactions**: rather than a badge or
+  icon, a manual interaction renders with a dotted stroke (`1,3`); a manual
+  *process* interaction (both flags set) renders with a dash-dot pattern
+  (`5,2,1,2`) so it's distinguishable from both plain process and plain
+  manual. A new shared `interactionDasharray()` helper in `render.js`
+  computes this for both `render-flow.js` and `render-timeline.js`,
+  continuing the de-duplication pattern from 2.3. The diagram legend gained
+  a fourth "manual" entry.
+
 ### 2.5 Other gaps identified, not yet prioritized
 
 Flagged for a later v2.x rather than blocking this roadmap:
@@ -277,7 +306,42 @@ This is a suggested order, not a fixed sequence — reorder freely:
 
 ---
 
-## 4. Explicitly out of scope for this roadmap
+## 4. Expanded use cases beyond ServiceNow
+
+Weave's core model — lanes as systems/participants, nodes as timestamped or
+causally-ordered events, and push/pull/process interactions between them —
+is already generic enough to support diagramming and analysis work well
+outside its original ServiceNow-integration niche. Worth keeping in mind
+when prioritizing future work, since none of these need new fundamentals,
+just the existing model applied elsewhere:
+
+- **Business-process / workflow diagrams.** Flow mode's causal-trigger
+  model (an event triggers the next via `triggerEventId`) maps directly
+  onto any swimlane process diagram — approvals, order fulfillment, hiring
+  workflows — not just system-to-system integrations.
+- **Incident postmortems and timeline reconstruction.** Timeline mode plus
+  the generic OAuth2/REST data-source importer (2.4) already works with any
+  API that returns timestamped records, not only ServiceNow — PagerDuty,
+  Jira, Datadog events, or any observability tool's event log. The new
+  automatic/manual interaction flag (2.6) directly strengthens this use
+  case: was a remediation step automated or performed by a person?
+- **API/webhook interaction documentation.** The push/pull/process
+  vocabulary already maps naturally onto request/response/side-effect
+  documentation for any API surface, ServiceNow or not.
+- **Data-pipeline lineage diagrams.** Systems-as-lanes and events-as-steps
+  generalizes to ETL/data-pipeline stage tracking — a record moving through
+  extract/transform/load stages is structurally the same diagram.
+- **Runbook / playbook diagrams.** The manual-vs-automatic distinction
+  (2.6) is exactly the call-out a runbook needs to make for each step.
+
+None of this requires ServiceNow-specific code — it's the same argument
+that's already driven keeping the data-source importer generic (1.3, 2.4):
+the more Weave's model and terminology stay tool-agnostic, the more of
+these use cases it can serve without divergent code paths.
+
+---
+
+## 5. Explicitly out of scope for this roadmap
 
 Set aside based on direction already given, but worth revisiting later if
 priorities change:
