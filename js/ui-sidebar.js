@@ -245,6 +245,7 @@ document.addEventListener('DOMContentLoaded',function(){
   initLegend();
   applyTimelineReverseState();
   initDiagSliders();
+  initKeyboardShortcuts();
   document.getElementById('dc-level').checked=displayConfig.showLevel;
   document.getElementById('dc-event-code').checked=displayConfig.showEventCode;
   document.getElementById('dc-managed-integration-code').checked=displayConfig.showManagedIntegrationCode;
@@ -255,6 +256,9 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('dc-time-format').value=displayConfig.timeFormat||'HH:mm:ss';
   document.getElementById('about-modal').addEventListener('click',function(e){
     if(e.target===this) closeAbout();
+  });
+  document.getElementById('shortcuts-modal').addEventListener('click',function(e){
+    if(e.target===this) closeShortcutsHelp();
   });
   document.getElementById('confirm-modal').addEventListener('click',function(e){
     if(e.target===this) closeConfirm();

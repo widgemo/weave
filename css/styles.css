@@ -435,6 +435,19 @@ html.dark .log-badge-error{background:#e05555}
   padding:6px 18px;text-decoration:none;transition:all .2s}
 .about-link:hover{background:rgba(232,96,74,.1);border-color:var(--accent)}
 
+/* ── SHORTCUTS HELP MODAL ────────────────────────────── */
+.shortcuts-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;
+  scrollbar-width:thin;scrollbar-color:var(--scrollbar) transparent}
+.shortcuts-group-title{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.08em;margin-top:8px}
+.shortcuts-group-title:first-child{margin-top:0}
+.shortcut-row{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border-radius:8px;padding:8px 12px;border:1px solid var(--border);background:var(--surface2)}
+.shortcut-desc{font-size:.8rem;color:var(--text)}
+.kbd{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:700;color:var(--text2);
+  background:var(--surface3);border:1px solid var(--border);border-radius:5px;
+  padding:2px 7px;flex-shrink:0}
+
 /* ── FILTER BAR ──────────────────────────────────────── */
 .filter-toggle-btn{display:inline-flex;align-items:center;gap:5px;position:relative}
 .filter-toggle-active{border-color:var(--accent)!important;color:var(--accent)!important}

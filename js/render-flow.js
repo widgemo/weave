@@ -1,4 +1,9 @@
 // ── FLOW DIAGRAM ────────────────────────────────────
+// Cache of the last-computed, post-override causal order and event map —
+// refreshed on every Flow-mode render() — so keyboard sequence-nudging
+// (js/keyboard.js) can read "what's the current on-screen order" without
+// needing renderFlow's function-local topo-sort state.
+var _lastFlowOrder=[], _lastFlowEvMap={};
 function renderFlow(parent,direction,showSeq,filteredEvents){
   ensureIds();
   var evList=filteredEvents||events;
@@ -26,27 +31,49 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
   // ── Manual sequence-position overrides ──
   // Post-process the topo order: any event with layoutAfterId set is spliced
   // out of its current slot and reinserted immediately after its anchor's
-  // CURRENT position ('' or null anchor = pin to the very front). Processed
-  // in original topo order (origOrder, a fixed snapshot) for determinism —
-  // this also makes the pass safe against override cycles (A after B, B
-  // after A): each event moves exactly once, so the loop always terminates
-  // regardless of cycles. A dangling anchor (event deleted, or no longer in
-  // `order`) is left where the topo sort put it.
+  // FINAL position ('' or null anchor = pin to the very front). Anchors are
+  // resolved recursively (applyOverride) before a dependent event is spliced
+  // relative to them — an anchor that itself has an unresolved override must
+  // reach its own final slot first, otherwise the dependent event gets
+  // spliced relative to the anchor's stale, pre-override position and can
+  // land far from where it should (confirmed bug: this used to be a flat
+  // origOrder.forEach pass, which broke exactly this way whenever two
+  // overrides' anchors intersected — an ordinary state after mixed
+  // dragging/nudging, not a rare edge case).
+  // `applied` marks an id's override as resolved (or as having none) so
+  // applyOverride only ever acts once per id — this is also what keeps an
+  // override cycle (A after B, B after A) safe: whichever id is encountered
+  // second during the other's resolution is already marked, so recursion
+  // stops and it's simply spliced relative to the first id's not-yet-final
+  // position, matching the original code's cycle-termination guarantee.
+  // Note: when multiple events anchor to the same target, their relative
+  // order among themselves still follows origOrder processing sequence
+  // (whichever is processed last lands closest to the shared anchor) — an
+  // inherent property of the anchor model, not something this fix changes.
+  // A dangling anchor (event deleted, or no longer in `order`) is left
+  // where the topo sort put it.
   var origOrder=order.slice();
-  origOrder.forEach(function(id){
+  var applied=new Set();
+  function applyOverride(id){
+    if(applied.has(id)) return;
+    applied.add(id);
     var ev=evMap[id];
     if(!ev||ev.layoutAfterId===undefined) return;
-    var curPos=order.indexOf(id); if(curPos<0) return;
     var anchor=ev.layoutAfterId;
+    var curPos=order.indexOf(id); if(curPos<0) return;
     if(anchor===''||anchor===null){
       order.splice(curPos,1); order.unshift(id); return;
     }
     if(anchor===id) return; // can't anchor after itself
+    if(evMap[anchor]) applyOverride(anchor); // resolve anchor to its final slot first
+    curPos=order.indexOf(id); if(curPos<0) return; // may have shifted
     order.splice(curPos,1);
     var anchorPos=order.indexOf(anchor); // recompute post-removal
     if(anchorPos<0){ order.splice(curPos,0,id); return; } // dangling anchor — put back, no-op
     order.splice(anchorPos+1,0,id);
-  });
+  }
+  origOrder.forEach(applyOverride);
+  _lastFlowOrder=order.slice(); _lastFlowEvMap=evMap;
 
   var isLR=direction==='lr';
   var seqOf={}; order.forEach(function(id,i){seqOf[id]=i;});
