@@ -276,6 +276,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     var hitRect=sv('rect',{x:bx,y:by,width:BW,height:BH,rx:9,fill:'transparent',cursor:'pointer','data-event-hit':'1'});
     var selectEventHandler=(function(id){return function(ev2){
       if(hitRect.ownerSVGElement._didPan){hitRect.ownerSVGElement._didPan=false;return;}
+      if(hitRect.ownerSVGElement._didDrag){hitRect.ownerSVGElement._didDrag=false;return;}
       ev2.stopPropagation();
       handleCanvasNodeClick(id);
     };})(evId);
@@ -286,6 +287,55 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     countBadge.addEventListener('contextmenu',contextMenuHandler);
     countBadge.addEventListener('mouseenter',(function(tooltip){return function(){tooltip.setAttribute('display','');};})(countTooltip));
     countBadge.addEventListener('mouseleave',(function(tooltip){return function(){tooltip.setAttribute('display','none');};})(countTooltip));
+
+    // Drag this node's hit-rect to a different lane to reassign its system.
+    (function(evId,ev,color){
+      function systemAtPoint(gx,gy){
+        var row=isLR?Math.round((gy-BH/2-20)/LG):Math.round((gx-BW/2-20)/SG);
+        if(row<0||row>=sysArr.length) return null;
+        return sysArr[row];
+      }
+      function laneRectFor(sysName){
+        var row=sysArr.indexOf(sysName); if(row<0) return null;
+        return isLR?{x:0,y:row*LG,w:pW,h:LG}:{x:row*SG,y:0,w:SG,h:pH};
+      }
+      var dragHL=null;
+      function updateHL(gx,gy){
+        var r=laneRectFor(systemAtPoint(gx,gy));
+        if(!r){dragHL.setAttribute('width',0);dragHL.setAttribute('height',0);return;}
+        dragHL.setAttribute('x',r.x);dragHL.setAttribute('y',r.y);
+        dragHL.setAttribute('width',r.w);dragHL.setAttribute('height',r.h);
+      }
+      setupNodeDrag(hitRect,{
+        svg:svg, mg:mg,
+        onStart:function(gx,gy){
+          dragHL=sv('rect',{x:0,y:0,width:0,height:0,fill:svgColors().hlSel,opacity:0.15,'pointer-events':'none'});
+          g.appendChild(dragHL);
+          var ghost=sv('rect',{x:gx-BW/2,y:gy-BH/2,width:BW,height:BH,rx:9,
+            fill:color,stroke:color,'stroke-width':2,opacity:0.4,'pointer-events':'none'});
+          g.appendChild(ghost);
+          updateHL(gx,gy);
+          return ghost;
+        },
+        onMove:function(ghost,gx,gy){
+          ghost.setAttribute('x',gx-BW/2); ghost.setAttribute('y',gy-BH/2);
+          updateHL(gx,gy);
+        },
+        onDrop:function(ghost,gx,gy){
+          if(ghost.parentNode) ghost.parentNode.removeChild(ghost);
+          if(dragHL&&dragHL.parentNode) dragHL.parentNode.removeChild(dragHL);
+          var newSys=systemAtPoint(gx,gy);
+          if(!newSys||newSys===ev.system) return;
+          var idx=findEventByIdIdx(evId); if(idx<0) return;
+          events[idx].system=newSys;
+          knownSys.add(newSys);
+          if(editIdx===idx) editEvent(idx);
+          render(); updateList(); refreshDL();
+          toast('Moved to '+newSys,'↕');
+        }
+      });
+    })(evId,ev,color);
+
     g.appendChild(hitRect);
     g.appendChild(countBadge);
     g.appendChild(countTooltip);

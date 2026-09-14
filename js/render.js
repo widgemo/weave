@@ -152,7 +152,65 @@ function handleCanvasNodeClick(id){
 }
 function handleCanvasBackgroundDeselect(svg){
   if(svg._didPan){svg._didPan=false;return;}
+  if(svg._didDrag){svg._didDrag=false;return;}
   if(selectedEventId) clearForm();
+}
+
+// ── CANVAS NODE DRAG (shared by render-flow.js & render-timeline.js) ──
+// Drags a node's ghost preview to a different lane; the real layout only
+// recomputes once, on drop. Nodes are rebuilt from scratch on every render(),
+// so — mirroring _setupPan's own "bind document listeners exactly once"
+// structure — the document-level mousemove/mouseup pair below is bound a
+// single time ever, driven by a shared session object that each node's
+// (per-render, element-scoped, safe-to-rebind) mousedown listener populates.
+var _nodeDragSession=null;
+var _nodeDragBound=false;
+function _toGCoords(svg,mg,clientX,clientY){
+  var pt=svg.createSVGPoint(); pt.x=clientX; pt.y=clientY;
+  var loc=pt.matrixTransform(svg.getScreenCTM().inverse());
+  return {x:loc.x-mg.left, y:loc.y-mg.top};
+}
+function _bindNodeDragOnce(){
+  if(_nodeDragBound) return;
+  _nodeDragBound=true;
+  var THRESH=4;
+  document.addEventListener('mousemove',function(e){
+    var d=_nodeDragSession; if(!d) return;
+    if(!d.moved){
+      if(Math.abs(e.clientX-d.startX)<=THRESH&&Math.abs(e.clientY-d.startY)<=THRESH) return;
+      d.moved=true; d.svg._didDrag=true;
+      var p0=_toGCoords(d.svg,d.mg,e.clientX,e.clientY);
+      d.handle=d.onStart(p0.x,p0.y);
+    }
+    var p=_toGCoords(d.svg,d.mg,e.clientX,e.clientY);
+    d.onMove(d.handle,p.x,p.y);
+  });
+  document.addEventListener('mouseup',function(e){
+    var d=_nodeDragSession; if(!d) return;
+    _nodeDragSession=null;
+    if(d.moved){
+      var p=_toGCoords(d.svg,d.mg,e.clientX,e.clientY);
+      d.onDrop(d.handle,p.x,p.y);
+    }
+  });
+}
+// hitEl: the per-node hit-test element (hitRect/hitCircle) to bind mousedown on.
+// opts.svg/opts.mg: the root <svg> and its {left,top} margin, for coordinate
+// conversion into the inner <g>'s local space (matching bC()/lp() geometry).
+// opts.onStart(gx,gy)    -- drag confirmed past threshold; create+append a
+//                           ghost (and optional drop-target highlight), return
+//                           a "handle" passed to onMove/onDrop.
+// opts.onMove(handle,gx,gy) -- reposition the ghost/highlight.
+// opts.onDrop(handle,gx,gy) -- remove the ghost/highlight, apply the drop.
+function setupNodeDrag(hitEl,opts){
+  _bindNodeDragOnce();
+  hitEl.addEventListener('mousedown',function(e){
+    if(e.button!==0) return; // ignore right-click/middle-click; contextmenu listener is untouched
+    e.preventDefault();
+    opts.svg._didDrag=false;
+    _nodeDragSession={svg:opts.svg,mg:opts.mg,startX:e.clientX,startY:e.clientY,
+      moved:false,handle:null,onStart:opts.onStart,onMove:opts.onMove,onDrop:opts.onDrop};
+  });
 }
 
 // ── RENDER DISPATCH ─────────────────────────────────────
