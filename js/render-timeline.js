@@ -295,7 +295,7 @@ function renderTimeline(parent,sorted,orientation){
     sortedI.forEach(function(inter,iIdx){
       var ti2=sysArr.indexOf(inter.target); if(ti2===-1) return;
       var tLane=lp(ti2), tTP=sc(e.timestamp+(inter.delay||0));
-      var ic=inter.nature==='push'?svgColors().accent:inter.nature==='pull'?svgColors().teal:svgColors().proc;
+      var ic=natureColor(inter.nature);
       var sx,sy,tx,ty;
       if(inter.nature==='pull'){
         // Pull: arrow points FROM target lane TO originating event; tTP displaces the far end by delay
@@ -316,49 +316,21 @@ function renderTimeline(parent,sorted,orientation){
   });
 
   // 2. Group by source/target pair and compute lateral offsets
-  function pairKey(sx,sy,tx,ty){
-    var a=Math.round(sx)+'_'+Math.round(sy), b=Math.round(tx)+'_'+Math.round(ty);
-    return a<b?a+'|'+b:b+'|'+a;
-  }
-  function isFwd(sx,sy,tx,ty){
-    var a=Math.round(sx)+'_'+Math.round(sy), b=Math.round(tx)+'_'+Math.round(ty);
-    return a<=b;
-  }
-  var groups={};
-  arrows.forEach(function(ar){
-    var k=pairKey(ar.sx,ar.sy,ar.tx,ar.ty);
-    if(!groups[k]) groups[k]=[];
-    groups[k].push(ar);
-  });
-  Object.keys(groups).forEach(function(k){
-    var grp=groups[k];
-    if(grp.length<=1) return;
-    var fwd=grp.filter(function(a){return isFwd(a.sx,a.sy,a.tx,a.ty);});
-    var rev=grp.filter(function(a){return !isFwd(a.sx,a.sy,a.tx,a.ty);});
-    if(fwd.length>0&&rev.length>0){
-      fwd.forEach(function(a,i){a._offset=(i-(fwd.length-1)/2)*ARROW_OFFSET+ARROW_OFFSET/2;});
-      rev.forEach(function(a,i){a._offset=(i-(rev.length-1)/2)*ARROW_OFFSET-ARROW_OFFSET/2;});
-    } else {
-      grp.forEach(function(a,i){a._offset=(i-(grp.length-1)/2)*ARROW_OFFSET;});
-    }
-  });
+  // (pairKey/isFwd/groupAndOffsetArrows/perpOffset/clipToShape live in render.js,
+  // shared with render-flow.js.)
+  groupAndOffsetArrows(arrows,ARROW_OFFSET);
 
   // 3. Draw arrows with offsets applied
-  function clipCircle(cx,cy,ox,oy,r){
-    var dx=ox-cx, dy=oy-cy, dist=Math.sqrt(dx*dx+dy*dy)||1;
-    return {x:cx+dx/dist*r, y:cy+dy/dist*r};
-  }
   arrows.forEach(function(ar){
     // Compute perpendicular offset
-    var dx=ar.tx-ar.sx, dy=ar.ty-ar.sy, dist=Math.sqrt(dx*dx+dy*dy)||1;
-    var px=-dy/dist, py=dx/dist;
     var off=ar._offset;
-    var osx=ar.sx+px*off, osy=ar.sy+py*off;
-    var otx=ar.tx+px*off, oty=ar.ty+py*off;
+    var p=perpOffset(ar.sx,ar.sy,ar.tx,ar.ty,off);
+    var osx=ar.sx+p.px, osy=ar.sy+p.py;
+    var otx=ar.tx+p.px, oty=ar.ty+p.py;
 
     var x1,y1,x2,y2,mEnd;
-    var p1=clipCircle(ar.sx,ar.sy,otx,oty,NODE_R+2);
-    var p2=clipCircle(ar.tx,ar.ty,osx,osy,NODE_R+2);
+    var p1=clipToShape({x:ar.sx,y:ar.sy},{x:otx,y:oty},{type:'circle',r:NODE_R+2});
+    var p2=clipToShape({x:ar.tx,y:ar.ty},{x:osx,y:osy},{type:'circle',r:NODE_R+2});
     x1=p1.x; y1=p1.y; x2=p2.x; y2=p2.y;
     mEnd=ar.nature==='process'?'':'url(#arr-'+ar.nature+'-'+rid+')';
 
@@ -374,8 +346,7 @@ function renderTimeline(parent,sorted,orientation){
     var mx=(x1+x2)/2+(isH?0:5), my=(y1+y2)/2-18;
     aT(g,mx,my,ar.label,{'text-anchor':'middle','font-size':'11','fill':strokeColor,'font-family':'DM Mono,monospace',opacity:opacity});
     var bmx=(x1+x2)/2, bmy=(y1+y2)/2;
-    aC(g,bmx,bmy,11,{fill:strokeColor,opacity:isUnrelated?0.2:0.9});
-    aT(g,bmx,bmy+5,String(ar.seqIdx+1),{'text-anchor':'middle','font-size':'10','fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:opacity});
+    drawSeqBadge(g,bmx,bmy,11,strokeColor,String(ar.seqIdx+1),10,5,isUnrelated?0.2:0.9,opacity);
   });
 
   // nodes
