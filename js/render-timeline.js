@@ -397,10 +397,61 @@ function renderTimeline(parent,sorted,orientation){
     var hitCircle=sv('circle',{cx:cx,cy:cy,r:19,fill:'transparent',cursor:'pointer','data-event-hit':'1'});
     hitCircle.addEventListener('click',(function(evId){return function(ev2){
       if(hitCircle.ownerSVGElement._didPan){hitCircle.ownerSVGElement._didPan=false;return;}
+      if(hitCircle.ownerSVGElement._didDrag){hitCircle.ownerSVGElement._didDrag=false;return;}
       ev2.stopPropagation();
       handleCanvasNodeClick(evId);
     };})(e._id));
     hitCircle.addEventListener('contextmenu',(function(evId){return function(ev2){showEventContextMenu(ev2,evId);};})(e._id));
+
+    // Drag this node's hit-circle to a different lane to reassign its system.
+    (function(evId,ev,color){
+      function systemAtPoint(gx,gy){
+        var pos=isH?gy:gx;
+        var row=Math.round((pos-LANE/2)/LANE);
+        if(row<0||row>=sysArr.length) return null;
+        return sysArr[row];
+      }
+      function laneRectFor(sysName){
+        var row=sysArr.indexOf(sysName); if(row<0) return null;
+        var pos=lp(row);
+        return isH?{x:0,y:pos-LANE/2,w:plotW,h:LANE}:{x:pos-LANE/2,y:0,w:LANE,h:plotH};
+      }
+      var dragHL=null;
+      function updateHL(gx,gy){
+        var r=laneRectFor(systemAtPoint(gx,gy));
+        if(!r){dragHL.setAttribute('width',0);dragHL.setAttribute('height',0);return;}
+        dragHL.setAttribute('x',r.x);dragHL.setAttribute('y',r.y);
+        dragHL.setAttribute('width',r.w);dragHL.setAttribute('height',r.h);
+      }
+      setupNodeDrag(hitCircle,{
+        svg:svg, mg:mg,
+        onStart:function(gx,gy){
+          dragHL=sv('rect',{x:0,y:0,width:0,height:0,fill:svgColors().hlSel,opacity:0.15,'pointer-events':'none'});
+          g.appendChild(dragHL);
+          var ghost=sv('circle',{cx:gx,cy:gy,r:NODE_R,fill:color,stroke:color,'stroke-width':2.5,opacity:0.4,'pointer-events':'none'});
+          g.appendChild(ghost);
+          updateHL(gx,gy);
+          return ghost;
+        },
+        onMove:function(ghost,gx,gy){
+          ghost.setAttribute('cx',gx); ghost.setAttribute('cy',gy);
+          updateHL(gx,gy);
+        },
+        onDrop:function(ghost,gx,gy){
+          if(ghost.parentNode) ghost.parentNode.removeChild(ghost);
+          if(dragHL&&dragHL.parentNode) dragHL.parentNode.removeChild(dragHL);
+          var newSys=systemAtPoint(gx,gy);
+          if(!newSys||newSys===ev.system) return;
+          var idx=findEventByIdIdx(evId); if(idx<0) return;
+          events[idx].system=newSys;
+          knownSys.add(newSys);
+          if(editIdx===idx) editEvent(idx);
+          render(); updateList(); refreshDL();
+          toast('Moved to '+newSys,'↕');
+        }
+      });
+    })(e._id,e,color);
+
     g.appendChild(hitCircle);
   });
   // Click on SVG background deselects
