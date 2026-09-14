@@ -23,7 +23,7 @@ function updateSaveBtnLabel(){
   btn.innerHTML=SAVE_EVENT_SVG+(hasInts?'Save Event &amp; Interactions':'Save Event');
 }
 
-function addIField(tgt,delay,nature,trigEvt,order,label,manual){
+function addIField(tgt,delay,nature,trigEvt,order,label,manual,startCollapsed){
   tgt=tgt||'';
   if(delay===undefined||delay===null||delay==='') delay='';
   nature=nature||'push'; trigEvt=trigEvt||''; manual=!!manual;
@@ -39,9 +39,12 @@ function addIField(tgt,delay,nature,trigEvt,order,label,manual){
         '</div>'+
         '<span class="seq-badge" id="sbadge-'+id+'">?</span>'+
         '<span class="il">Interaction</span>'+
+        '<button class="ib-toggle" id="ibt-'+id+'" onclick="toggleIBlock('+id+')" title="Expand/collapse">▾</button>'+
       '</div>'+
       '<button class="btn btn-d" onclick="removeI('+id+')">✕ Remove</button>'+
     '</div>'+
+    '<div class="ib-summary" id="ibs-'+id+'" onclick="toggleIBlock('+id+')"></div>'+
+    '<div class="ib-body" id="ibb-'+id+'">'+
     '<div class="fg"><label class="fl">Target System <span class="req">*</span></label>'+
     '<input type="text" id="ti-'+id+'" list="tdl-'+id+'" placeholder="Type or pick a system…" autocomplete="off" oninput="refreshTriggerDD('+id+');refreshDelayRequired('+id+')">'+
     '<datalist id="tdl-'+id+'"></datalist></div>'+
@@ -63,7 +66,8 @@ function addIField(tgt,delay,nature,trigEvt,order,label,manual){
     '<div class="fg" id="tr-'+id+'" style="'+(appMode==='timeline'?'display:none':'')+'">'+
     '<label class="fl">Triggers Event (Flow mode)</label>'+
     '<select id="te-'+id+'"></select>'+
-    '<span class="hint" style="margin-top:3px">Which event does this interaction trigger?</span></div>';
+    '<span class="hint" style="margin-top:3px">Which event does this interaction trigger?</span></div>'+
+    '</div>';
   c.appendChild(b);
   if(tgt) document.getElementById('ti-'+id).value=tgt;
   if(label) document.getElementById('ilbl-'+id).value=label;
@@ -75,6 +79,27 @@ function addIField(tgt,delay,nature,trigEvt,order,label,manual){
   renumberIBlocks();
   refreshDelayRequired(id);
   updateSaveBtnLabel();
+  refreshIBlockSummary(id);
+  if(startCollapsed) b.classList.add('collapsed');
+}
+
+function toggleIBlock(id){
+  var b=document.getElementById('ib-'+id); if(!b) return;
+  var collapsing=!b.classList.contains('collapsed');
+  if(collapsing) refreshIBlockSummary(id);
+  b.classList.toggle('collapsed');
+}
+
+function refreshIBlockSummary(id){
+  var el=document.getElementById('ibs-'+id); if(!el) return;
+  var tgt=(document.getElementById('ti-'+id)||{}).value||'';
+  var nt=(document.getElementById('nt-'+id)||{}).value||'push';
+  var dl=(document.getElementById('dl-'+id)||{}).value;
+  var mn=(document.getElementById('mn-'+id)||{}).checked;
+  var lbl=(document.getElementById('ilbl-'+id)||{}).value||'';
+  var arrow=nt==='push'?'→':nt==='pull'?'←':'';
+  var mid=nt==='process'?'process':(arrow+(mn?' manual':(dl!==''&&dl!==undefined?' '+dl+'ms':'')));
+  el.textContent=(tgt||'(no target set)')+(mid?' · '+mid:'')+(lbl?' — '+trunc(lbl,40):'');
 }
 
 function refreshTriggerDD(id){
@@ -196,7 +221,7 @@ function editEvent(idx){
   if(e.timestampStr||e.timestamp) document.getElementById('ts').value=toDTL(e.timestampStr||new Date(e.timestamp).toISOString());
   clearI();
   var sortedInts=[...( e.interactions||[])].sort(function(a,b){return (a.order||0)-(b.order||0);});
-  sortedInts.forEach(function(i,idx){addIField(i.target,i.delay||0,i.nature,i.triggerEventId||'',idx,i.label||'',i.manual);});
+  sortedInts.forEach(function(i,idx){addIField(i.target,i.delay||0,i.nature,i.triggerEventId||'',idx,i.label||'',i.manual,true);});
   document.getElementById('cancel-edit').style.display='inline-flex';
   _updateInspectorEmptyState();
   updateList();
