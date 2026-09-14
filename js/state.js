@@ -12,7 +12,7 @@ var sysOrder={}; // { systemName: orderNumber } — lower = earlier in diagram
 var systemsRegistry=[]; // [{name,desc,order}]
 var actorsRegistry=[];  // [{name,desc}]
 var FIXED_LEVELS=['info','warning','error','debug','comment','work_note','other'];
-var LEVEL_LABELS={info:'Info',warning:'Warning',error:'Error',debug:'Debug',comment:'Comment',work_note:'Work Note',other:'Other'};
+var LEVEL_LABELS={info:'Info',warning:'Warning',error:'Error',debug:'Debug',comment:'Comment',work_note:'Internal Note',other:'Other'};
 var levelsRegistry=FIXED_LEVELS.slice(); // fixed event levels
 function normalizeLevel(val){var v=(val||'').toString().trim().toLowerCase();if(!v)return '';return FIXED_LEVELS.indexOf(v)!==-1?v:'other';}
 var knownSys=new Set();

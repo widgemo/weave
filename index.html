@@ -174,7 +174,7 @@
           <option value="error">Error</option>
           <option value="debug">Debug</option>
           <option value="comment">Comment</option>
-          <option value="work_note">Work Note</option>
+          <option value="work_note">Internal Note</option>
           <option value="other">Other</option>
         </select>
       </div>
@@ -279,7 +279,7 @@
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:2px">
         <label class="tchk"><input type="checkbox" id="dc-level" checked onchange="saveDisplayConfig()"> Event Level</label>
         <label class="tchk"><input type="checkbox" id="dc-event-code" checked onchange="saveDisplayConfig()"> Event Code</label>
-        <label class="tchk"><input type="checkbox" id="dc-managed-integration-code" checked onchange="saveDisplayConfig()"> Managed Integration Code</label>
+        <label class="tchk"><input type="checkbox" id="dc-managed-integration-code" checked onchange="saveDisplayConfig()"> Integration Code</label>
         <label class="tchk"><input type="checkbox" id="dc-actor" checked onchange="saveDisplayConfig()"> Actor</label>
         <label class="tchk"><input type="checkbox" id="dc-show-date" checked onchange="saveDisplayConfig()"> Date&nbsp;<span class="hint" style="margin-left:4px">(Timeline)</span></label>
         <label class="tchk"><input type="checkbox" id="dc-show-seq" checked onchange="saveDisplayConfig()"> Seq #&nbsp;<span class="hint" style="margin-left:4px">(Flow)</span></label>
@@ -584,6 +584,7 @@
         <div class="leg-item"><span class="leg-line" id="leg-push"></span><span class="leg-label">push &#x2192;</span></div>
         <div class="leg-item"><span class="leg-line" id="leg-pull"></span><span class="leg-label">pull &#x2190;</span></div>
         <div class="leg-item"><span class="leg-line leg-line-proc" id="leg-proc"></span><span class="leg-label">process</span></div>
+        <div class="leg-item"><span class="leg-line leg-line-manual" id="leg-manual"></span><span class="leg-label">manual</span></div>
       </div>
     </div>
   </main>

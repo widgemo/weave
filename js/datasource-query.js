@@ -258,7 +258,7 @@ function dsUpdatePreview() {
   var html = row('Description', mapped.desc) + row('System', mapped.system) +
              row('Actor', mapped.actor) + row('Timestamp', mapped.timestampStr) +
              row('Event Code', mapped.eventCode) + row('Level', mapped.level) +
-             row('Integration', mapped.managedIntegrationCode);
+             row('Integration Code', mapped.managedIntegrationCode);
   if (mapped.interactions.length) html += row('Interactions', mapped.interactions.length + ' mapped');
   if (!mapped.valid) html += '<div class="ds-preview-warn">&#9888; System is blank — this record would fail validation</div>';
   body.innerHTML = html;
