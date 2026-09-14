@@ -61,9 +61,10 @@ function renderSystemsList(){
     // Header row
     var hdr=document.createElement('div');
     hdr.style.cssText='display:flex;align-items:center;gap:6px';
-    var lbl=document.createElement('span');
-    lbl.style.cssText='flex:1;font-size:.83rem;font-weight:600;color:var(--text)';
-    lbl.textContent=name;
+    var nameInp=document.createElement('input');
+    nameInp.type='text'; nameInp.value=name; nameInp.placeholder='System name';
+    nameInp.style.cssText='flex:1;font-size:.83rem;font-weight:600;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none';
+    nameInp.addEventListener('change',function(){renameSystem(name,nameInp.value);});
     var orderInp=document.createElement('input');
     orderInp.type='number'; orderInp.min='1'; orderInp.placeholder='order';
     orderInp.style.cssText='width:58px;padding:3px 6px;font-size:.75rem';
@@ -74,7 +75,7 @@ function renderSystemsList(){
     delBtn.className='btn btn-d'; delBtn.style.cssText='padding:3px 8px;font-size:.7rem';
     delBtn.textContent='✕';
     delBtn.addEventListener('click',function(){deleteSystem(name);});
-    hdr.appendChild(lbl); hdr.appendChild(orderInp); hdr.appendChild(delBtn);
+    hdr.appendChild(nameInp); hdr.appendChild(orderInp); hdr.appendChild(delBtn);
     // Desc input
     var descInp=document.createElement('input');
     descInp.type='text'; descInp.placeholder='Description (optional)';
@@ -96,7 +97,7 @@ function renderActorsList(){
     row.innerHTML=
       '<div style="display:flex;align-items:center;gap:6px">'+
         '<input type="text" style="flex:1;font-size:.83rem;font-weight:600;padding:4px 8px" '+
-          'value="'+esc(a.name)+'" placeholder="Actor name" onchange="setActorName('+i+',this.value)">'+
+          'value="'+esc(a.name)+'" placeholder="Actor name" onchange="renameActor('+i+',this.value)">'+
         '<button class="btn btn-d" style="padding:3px 8px;font-size:.7rem" onclick="deleteActor('+i+')">&#x2715;</button>'+
       '</div>'+
       '<input type="text" placeholder="Description (optional)" style="font-size:.78rem;padding:5px 8px" '+
@@ -165,8 +166,125 @@ function setSysDesc(name,val){
 function deleteActor(i){
   actorsRegistry.splice(i,1); renderActorsList(); refreshActorDL();
 }
-function setActorName(i,v){actorsRegistry[i].name=v.trim();refreshActorDL();}
 function setActorDesc(i,v){actorsRegistry[i].desc=v;}
+
+// RENAME WITH CASCADE (Systems & Actors)
+// events[].system/.actor and interactions[].target are plain strings with
+// no ID indirection, so a rename is a find-and-replace of the old name
+// across every place it's stored: events, sysOrder keys (systems only),
+// filterConfig selections, knownSys (systems only), and the registry entry.
+function _refreshOpenInspectorAfterRename(oldName,newName,isActor){
+  if(editIdx<0||!events[editIdx]) return;
+  if(!isActor){
+    var se=document.getElementById('system-input');
+    if(se&&se.value===oldName) se.value=newName;
+    document.querySelectorAll('.iblock').forEach(function(b){
+      var ti=document.getElementById('ti-'+b.dataset.id);
+      if(ti&&ti.value===oldName) ti.value=newName;
+    });
+  } else {
+    var ae=document.getElementById('actor');
+    if(ae&&ae.value===oldName) ae.value=newName;
+  }
+}
+function _cascadeRenameSystem(oldName,newName){
+  var touched=0;
+  events.forEach(function(ev){
+    var hit=false;
+    if(ev.system===oldName){ev.system=newName;hit=true;}
+    (ev.interactions||[]).forEach(function(i){if(i.target===oldName){i.target=newName;hit=true;}});
+    if(hit) touched++;
+  });
+  return touched;
+}
+function _cascadeRenameActor(oldName,newName){
+  var touched=0;
+  events.forEach(function(ev){if(ev.actor===oldName){ev.actor=newName;touched++;}});
+  return touched;
+}
+function _swapFilterName(arr,oldName,newName){
+  var fi=arr.indexOf(oldName);
+  if(fi===-1) return;
+  if(arr.indexOf(newName)===-1) arr[fi]=newName; else arr.splice(fi,1);
+}
+function _renameToast(oldName,newName,touched,isMerge){
+  var suffix=isMerge?' (merged)':'';
+  if(!touched){toast('Renamed "'+oldName+'" to "'+newName+'"'+suffix,'✏');return;}
+  toast('Renamed "'+oldName+'" to "'+newName+'"'+suffix+' across '+touched+' event'+(touched!==1?'s':''),'✏');
+}
+function renameSystem(oldName,newName){
+  newName=(newName||'').trim();
+  if(!newName||newName===oldName){renderSystemsList();return;}
+  var collision=systemsRegistry.some(function(s){return s.name===newName&&s.name!==oldName;})||
+    (knownSys.has(newName)&&newName!==oldName);
+  if(collision){
+    showConfirm(
+      'A system named "'+newName+'" already exists. Merge "'+oldName+'" into it? '+
+      'All events and interactions using "'+oldName+'" will be moved to "'+newName+'", '+
+      'and the "'+oldName+'" registry entry will be removed.',
+      function(){_doRenameSystem(oldName,newName,true);},
+      'Merge','Merge Systems');
+    renderSystemsList();
+    return;
+  }
+  _doRenameSystem(oldName,newName,false);
+}
+function _doRenameSystem(oldName,newName,isMerge){
+  var touched=_cascadeRenameSystem(oldName,newName);
+  if(sysOrder[oldName]!==undefined){
+    if(!isMerge||sysOrder[newName]===undefined) sysOrder[newName]=sysOrder[oldName];
+    delete sysOrder[oldName];
+  }
+  _swapFilterName(filterConfig.systems,oldName,newName);
+  var oldReg=systemsRegistry.find(function(s){return s.name===oldName;});
+  if(isMerge){
+    systemsRegistry=systemsRegistry.filter(function(s){return s.name!==oldName;});
+    var newReg=systemsRegistry.find(function(s){return s.name===newName;});
+    if(newReg&&oldReg&&!newReg.desc) newReg.desc=oldReg.desc;
+  } else if(oldReg){
+    oldReg.name=newName;
+  } else {
+    systemsRegistry.push({name:newName,desc:'',order:undefined});
+  }
+  knownSys.delete(oldName); knownSys.add(newName);
+  _refreshOpenInspectorAfterRename(oldName,newName,false);
+  refreshDL(); refreshSysOrderUI(); renderSystemsList(); refreshFilterBar();
+  render(); updateList();
+  _renameToast(oldName,newName,touched,isMerge);
+}
+function renameActor(i,newName){
+  var oldName=actorsRegistry[i].name;
+  newName=(newName||'').trim();
+  if(!newName||newName===oldName){renderActorsList();return;}
+  var collision=actorsRegistry.some(function(a,ai){return a.name===newName&&ai!==i;});
+  if(collision){
+    showConfirm(
+      'An actor named "'+newName+'" already exists. Merge "'+oldName+'" into it? '+
+      'All events using "'+oldName+'" will be moved to "'+newName+'", '+
+      'and the "'+oldName+'" registry entry will be removed.',
+      function(){_doRenameActor(i,oldName,newName,true);},
+      'Merge','Merge Actors');
+    renderActorsList();
+    return;
+  }
+  _doRenameActor(i,oldName,newName,false);
+}
+function _doRenameActor(i,oldName,newName,isMerge){
+  var touched=_cascadeRenameActor(oldName,newName);
+  _swapFilterName(filterConfig.actors,oldName,newName);
+  if(isMerge){
+    var oldDesc=actorsRegistry[i].desc;
+    actorsRegistry.splice(i,1);
+    var newReg=actorsRegistry.find(function(a){return a.name===newName;});
+    if(newReg&&!newReg.desc) newReg.desc=oldDesc;
+  } else {
+    actorsRegistry[i].name=newName;
+  }
+  _refreshOpenInspectorAfterRename(oldName,newName,true);
+  renderActorsList(); refreshActorDL(); refreshFilterBar();
+  render(); updateList();
+  _renameToast(oldName,newName,touched,isMerge);
+}
 function refreshActorDL(){
   var dl=document.getElementById('actor-dl');
   if(!dl) return;
