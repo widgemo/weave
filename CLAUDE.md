@@ -13,14 +13,23 @@ Deployed as a GitHub Pages site.
 - Single `index.html` entry point for GitHub Pages
 
 ## Architecture (after refactor)
-- `index.html` — shell, layout HTML, CSS custom properties
+- `index.html` — shell, layout HTML, CSS custom properties, and the `<script>` load order (see below)
 - `css/styles.css` — all styles
-- `js/state.js` — app state: events, systems, actors, sysOrder, appMode
-- `js/ui.js` — sidebar, forms, tabs, toast, theme toggle
-- `js/render.js` — SVG rendering dispatcher and shared helpers
-- `js/render-flow.js` — Flow mode diagram rendering
-- `js/render-timeline.js` — Timeline mode diagram rendering
-- `js/import-export.js` — JSON import/export
+- `js/logger.js` — in-memory app log (viewable via the Logs button) and the error banner
+- `js/state.js` — app state: events, systems, actors, sysOrder, appMode, theme-aware `svgColors()`, timestamp/timezone helpers
+- `js/render.js` — SVG primitive builders, the mode dispatcher (`render()`), zoom/pan/scroll-arrow handling, List and Table view rendering, and geometry helpers shared by the two diagram renderers below (`groupAndOffsetArrows`, `perpOffset`, `clipToShape`, `natureColor`, `drawSeqBadge`)
+- `js/render-flow.js` — Flow mode diagram rendering (causal/topo-sorted layout)
+- `js/render-timeline.js` — Timeline mode diagram rendering (timestamp-based, compact/linear scale)
+- `js/import-export.js` — JSON import/export, localStorage persistence, and schema migration (`migrateData()`)
+- `js/filter.js` — the filter bar (search text, system/actor/level/code multiselects, event isolation)
+- `js/ui-modals.js` — the event context menu, and the About/Confirm/Export-filename modals
+- `js/ui-sidebar.js` — banner chrome (file menu, theme toggle, legend), mode/tab switching, the event list, timezone selector, and app init
+- `js/ui-forms.js` — the event + interaction add/edit form, scenario save, clear/new-diagram actions
+- `js/ui-registry.js` — the Systems/Actors registry CRUD and system lane-order UI
+- `js/datasource-auth.js` — data-source OAuth 2.0 (PKCE) flow, token storage, and the connection config UI
+- `js/datasource-query.js` — data-source query form, results list, and record→event field mapping
+
+None of these are ES modules — every file is loaded via a plain `<script>` tag in `index.html` (in the order listed above) and shares one global scope, per the "no build step" constraint below. Splitting a file further only changes which `<script>` tag a function lives in; it does not change how functions call each other.
 
 ## Key data structures
 - `events[]` — array of event objects `{_id, desc, system, actor, timestamp, interactions[], mode}`
@@ -44,6 +53,27 @@ Deployed as a GitHub Pages site.
   ```js
   var APP_VERSION = '2026.04.03';
   ```
+
+## Data source subsystem (`js/datasource-auth.js` + `js/datasource-query.js`)
+Weave can pull records from an external REST API (e.g. a ServiceNow instance) and
+import them as diagram events — this is separate from the JSON file Import/Export
+in `js/import-export.js`.
+- **Auth** (`js/datasource-auth.js`): a generic OAuth 2.0 Authorization Code + PKCE
+  client. Config (base URL, client ID, scope, auth/token paths) is stored in
+  `localStorage` under `weave-ds-config`; the access/refresh token under
+  `weave-ds-token`; the in-flight PKCE verifier/state under `sessionStorage`
+  (`weave-ds-pkce`, cleared on tab close). Default auth/token paths
+  (`/oauth_auth.do`, `/oauth_token.do`) follow ServiceNow's OAuth endpoint
+  convention, but the client itself is instance-agnostic — any OAuth 2.0 + PKCE
+  REST API can be configured.
+- **Query & mapping** (`js/datasource-query.js`): the query form (endpoint path +
+  query string), the results list, and `dsRecordToEvent()` which maps configurable
+  response fields (description, system, actor, timestamp, event/integration code,
+  level, and an optional interactions array) onto a diagram event. Query form state
+  persists to `localStorage` (`weave-ds-query`) and can be exported/imported as a
+  standalone JSON file, independent of the diagram JSON export.
+- Both files are loaded after `js/ui-modals.js` (for `promptExportFilename`) and
+  before the inline `dsInit()` call at the end of `index.html`.
 
 ## Important constraints
 - Must remain deployable as static GitHub Pages (no server, no build step)

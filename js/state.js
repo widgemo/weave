@@ -2,6 +2,7 @@
 var APP_VERSION = '2026.08.27.214326';
 var events=[], editIdx=-1, iCount=0, scenName='', scenDesc='', appMode='timeline';
 var selectedEventId=null; // _id of currently selected/highlighted event
+var inspectorOpen=false; // true = panel-add shows the event form (new or edit); false = empty placeholder
 var diagramZoom=1.0;
 var timelineCompact = true;
 var timelineReverse = localStorage.getItem('weave-timeline-reverse')==='1';
@@ -19,6 +20,7 @@ var displayConfig={showLevel:true,showEventCode:true,showManagedIntegrationCode:
   dateFormat:localStorage.getItem('weave-date-format')||'YYYY-MM-DD',
   timeFormat:localStorage.getItem('weave-time-format')||'HH:mm:ss'};
 var filterConfig={text:'',systems:[],actors:[],levels:[],eventCodes:[],integrationCodes:[],eventIds:[],showRelated:true};
+var tableSelection=new Set(); // Table mode row selection — persists across re-renders
 var COLORS_L=['#e8604a','#3cbfbf','#f5a623','#7755cc','#c04535','#2a9d8f','#e76f51'];
 var COLORS_D=['#f07060','#45d0d0','#f5b030','#8888cc','#e05050','#35b8b8','#f09070'];
 function COLORS_ARR(){return document.documentElement.classList.contains('dark')?COLORS_D:COLORS_L;}

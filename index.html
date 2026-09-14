@@ -133,7 +133,7 @@
 <div class="app-layout">
   <aside class="sidebar">
     <div class="sidebar-tabs">
-      <button class="sidebar-tab active" id="stab-add" onclick="switchTab('add')">Add/Edit</button>
+      <button class="sidebar-tab active" id="stab-add" onclick="switchTab('add')">Inspector</button>
       <button class="sidebar-tab" id="stab-events" onclick="switchTab('events')">Events</button>
       <button class="sidebar-tab" id="stab-scenario" onclick="switchTab('scenario')">Diagram</button>
       <button class="sidebar-tab" id="stab-systems" onclick="switchTab('systems')">Registry</button>
@@ -141,6 +141,15 @@
     </div>
 
     <div class="sidebar-panel active" id="panel-add">
+      <div class="estate inspector-empty" id="inspector-empty">
+        <div class="estate-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </div>
+        <h3>Nothing selected</h3>
+        <p>Click a node on the canvas to edit it.</p>
+        <button class="btn btn-outline btn-sm" onclick="newEvent()">+ Add Event</button>
+      </div>
+      <div id="inspector-form" style="display:none;flex-direction:column;gap:14px">
       <div class="fg">
         <label class="fl">Description <span class="req">*</span></label>
         <input type="text" id="desc" placeholder="What happens in this event?">
@@ -202,10 +211,11 @@
         </button>
         <button class="btn btn-s" onclick="clearForm()" id="cancel-edit" style="display:none">Cancel</button>
       </div>
+      </div>
     </div>
 
     <div class="sidebar-panel" id="panel-events">
-      <div class="sh"><span class="st">All Events</span><div style="display:flex;align-items:center;gap:6px"><span id="ecount" class="hint"></span><button class="btn btn-outline btn-sm" onclick="switchTab('add')" title="Add new event">+ New</button></div></div>
+      <div class="sh"><span class="st">All Events</span><div style="display:flex;align-items:center;gap:6px"><span id="ecount" class="hint"></span><button class="btn btn-outline btn-sm" onclick="newEvent()" title="Add new event">+ New</button></div></div>
       <div id="elist" class="elist"></div>
     </div>
 
@@ -681,8 +691,12 @@
 <script src="js/render-flow.js"></script>
 <script src="js/import-export.js"></script>
 <script src="js/filter.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/ui-modals.js"></script>
+<script src="js/ui-sidebar.js"></script>
+<script src="js/ui-forms.js"></script>
+<script src="js/ui-registry.js"></script>
 <script src="js/datasource-auth.js"></script>
+<script src="js/datasource-query.js"></script>
 <script>dsInit();</script>
 </body>
 </html>

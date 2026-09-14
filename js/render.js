@@ -82,6 +82,79 @@ function aC(p,cx,cy,r,a){p.appendChild(sv('circle',Object.assign({cx:cx,cy:cy,r:
 function aR(p,x,y,w,h,a){p.appendChild(sv('rect',Object.assign({x:x,y:y,width:w,height:h},a)));return p;}
 function aP(p,d,a){p.appendChild(sv('path',Object.assign({d:d},a)));return p;}
 
+// ── ARROW GEOMETRY HELPERS (shared by render-flow.js & render-timeline.js) ──
+// Arrows sharing the same endpoint pair (regardless of direction) are grouped
+// and spread apart perpendicular to the line so they don't overlap.
+function pairKey(sx,sy,tx,ty){
+  var a=Math.round(sx)+'_'+Math.round(sy), b=Math.round(tx)+'_'+Math.round(ty);
+  return a<b?a+'|'+b:b+'|'+a;
+}
+function isFwd(sx,sy,tx,ty){
+  var a=Math.round(sx)+'_'+Math.round(sy), b=Math.round(tx)+'_'+Math.round(ty);
+  return a<=b;
+}
+function groupAndOffsetArrows(arrows,offsetStep){
+  var groups={};
+  arrows.forEach(function(ar){
+    var k=pairKey(ar.sx,ar.sy,ar.tx,ar.ty);
+    if(!groups[k]) groups[k]=[];
+    groups[k].push(ar);
+  });
+  Object.keys(groups).forEach(function(k){
+    var grp=groups[k];
+    if(grp.length<=1) return;
+    var fwd=grp.filter(function(a){return isFwd(a.sx,a.sy,a.tx,a.ty);});
+    var rev=grp.filter(function(a){return !isFwd(a.sx,a.sy,a.tx,a.ty);});
+    if(fwd.length>0&&rev.length>0){
+      fwd.forEach(function(a,i){a._offset=(i-(fwd.length-1)/2)*offsetStep+offsetStep/2;});
+      rev.forEach(function(a,i){a._offset=(i-(rev.length-1)/2)*offsetStep-offsetStep/2;});
+    } else {
+      grp.forEach(function(a,i){a._offset=(i-(grp.length-1)/2)*offsetStep;});
+    }
+  });
+}
+function perpOffset(sx,sy,tx,ty,off){
+  var dx=tx-sx, dy=ty-sy, dist=Math.sqrt(dx*dx+dy*dy)||1;
+  return {px:-dy/dist*off, py:dx/dist*off};
+}
+// Clip a line from `from` to `to` against a shape centered on `from`:
+// {type:'box',hw,hh} (half-width/half-height) or {type:'circle',r}.
+function clipToShape(from,to,shape){
+  var dx=to.x-from.x, dy=to.y-from.y;
+  if(shape.type==='circle'){
+    var dist=Math.sqrt(dx*dx+dy*dy)||1;
+    return {x:from.x+dx/dist*shape.r, y:from.y+dy/dist*shape.r};
+  }
+  if(dx===0&&dy===0) return {x:from.x,y:from.y};
+  var t=Math.min(shape.hw/Math.abs(dx||1),shape.hh/Math.abs(dy||1));
+  return {x:from.x+dx*t, y:from.y+dy*t};
+}
+function natureColor(nature){
+  return nature==='push'?svgColors().accent:nature==='pull'?svgColors().teal:svgColors().proc;
+}
+// Draws a filled circle badge with centered white sequence-number text.
+// (cx,cy) is the circle center; textDy is the text baseline offset from cy.
+function drawSeqBadge(g,cx,cy,r,color,label,fontSize,textDy,circleOpacity,textOpacity){
+  aC(g,cx,cy,r,{fill:color,opacity:circleOpacity});
+  aT(g,cx,cy+textDy,label,{'text-anchor':'middle','font-size':String(fontSize),'fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:textOpacity});
+}
+
+// ── CANVAS NODE SELECTION (shared by render-flow.js & render-timeline.js) ──
+// Table mode is intentionally NOT wired to these — its row click calls
+// editEvent() directly with no toggle/deselect concept.
+function handleCanvasNodeClick(id){
+  var idx=findEventByIdIdx(id);
+  if(idx<0) return;
+  selectedEventId=(selectedEventId===id)?null:id;
+  render();
+  if(selectedEventId) editEvent(idx);
+  else clearForm();
+}
+function handleCanvasBackgroundDeselect(svg){
+  if(svg._didPan){svg._didPan=false;return;}
+  if(selectedEventId) clearForm();
+}
+
 // ── RENDER DISPATCH ─────────────────────────────────────
 function render(){
   var ca=document.getElementById('chart'); ca.innerHTML='';
@@ -686,7 +759,7 @@ function renderTable(parent,sorted){
       sortedInts.forEach(function(i,ii){
         var itr=document.createElement('tr');
         itr.style.cssText='border-bottom:1px solid '+c.grid+'33';
-        var natColor=i.nature==='push'?c.accent:i.nature==='pull'?c.teal:c.proc;
+        var natColor=natureColor(i.nature);
         [
           {text:String(ii+1),style:'font-family:DM Mono,monospace;font-size:.65rem;color:'+c.label+';width:24px'},
           {text:i.target||'—',style:'color:'+c.listSys+';font-weight:600'},

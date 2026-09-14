@@ -49,47 +49,12 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     else     aT(g,lp+BW/2+10,-20,sys,{'text-anchor':'middle','font-weight':'600','font-size':'12','fill':svgColors().label});
   });
 
-  // ── Arrow grouping helpers ──
+  // ── Arrow grouping ──
+  // pairKey/isFwd/groupAndOffsetArrows/perpOffset/clipToShape live in render.js,
+  // shared with render-timeline.js.
   var ARROW_OFFSET=8;
   var PAD=6, HW=BW/2+PAD, HH=BH/2+PAD;
-  function pairKey(sx,sy,tx,ty){
-    var a=Math.round(sx)+'_'+Math.round(sy), b=Math.round(tx)+'_'+Math.round(ty);
-    return a<b?a+'|'+b:b+'|'+a;
-  }
-  function isFwd(sx,sy,tx,ty){
-    var a=Math.round(sx)+'_'+Math.round(sy), b=Math.round(tx)+'_'+Math.round(ty);
-    return a<=b;
-  }
-  function assignOffsets(arrows){
-    var groups={};
-    arrows.forEach(function(ar){
-      var k=pairKey(ar.sx,ar.sy,ar.tx,ar.ty);
-      if(!groups[k]) groups[k]=[];
-      groups[k].push(ar);
-    });
-    Object.keys(groups).forEach(function(k){
-      var grp=groups[k];
-      if(grp.length<=1) return;
-      var fwd=grp.filter(function(a){return isFwd(a.sx,a.sy,a.tx,a.ty);});
-      var rev=grp.filter(function(a){return !isFwd(a.sx,a.sy,a.tx,a.ty);});
-      if(fwd.length>0&&rev.length>0){
-        fwd.forEach(function(a,i){a._offset=(i-(fwd.length-1)/2)*ARROW_OFFSET+ARROW_OFFSET/2;});
-        rev.forEach(function(a,i){a._offset=(i-(rev.length-1)/2)*ARROW_OFFSET-ARROW_OFFSET/2;});
-      } else {
-        grp.forEach(function(a,i){a._offset=(i-(grp.length-1)/2)*ARROW_OFFSET;});
-      }
-    });
-  }
-  function perpOffset(sx,sy,tx,ty,off){
-    var dx=tx-sx, dy=ty-sy, dist=Math.sqrt(dx*dx+dy*dy)||1;
-    return {px:-dy/dist*off, py:dx/dist*off};
-  }
-  function clipToBox(from,to,hw,hh){
-    var dx=to.x-from.x, dy=to.y-from.y;
-    if(dx===0&&dy===0) return {x:from.x,y:from.y};
-    var t=Math.min(hw/Math.abs(dx||1),hh/Math.abs(dy||1));
-    return {x:from.x+dx*t, y:from.y+dy*t};
-  }
+  function clipToBox(from,to,hw,hh){return clipToShape(from,to,{type:'box',hw:hw,hh:hh});}
 
   // ── Causal edges ──
   var sortedEdges=[...edges].sort(function(a,b){return (a.inter.order||0)-(b.inter.order||0);});
@@ -120,7 +85,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
   var causalArrows=[];
   sortedEdges.forEach(function(ed,edIdx){
     var src=bC(ed.from), dst=bC(ed.to);
-    var color=ed.inter.nature==='push'?svgColors().accent:ed.inter.nature==='pull'?svgColors().teal:svgColors().proc;
+    var color=natureColor(ed.inter.nature);
     causalArrows.push({
       sx:src.x,sy:src.y,tx:dst.x,ty:dst.y,
       nature:ed.inter.nature,color:color,isPull:ed.inter.nature==='pull',
@@ -128,7 +93,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
       fromId:ed.from, toId:ed.to, edIdx:edIdx
     });
   });
-  assignOffsets(causalArrows);
+  groupAndOffsetArrows(causalArrows,ARROW_OFFSET);
 
   // Draw causal arrows
   causalArrows.forEach(function(ar){
@@ -164,8 +129,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     var mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
     aT(g,mx,my-12,ar.label,
       {'text-anchor':'middle','font-size':'9','fill':strokeColor,'font-family':'DM Mono,monospace',opacity:opacity});
-    aC(g,mx,my,9,{fill:strokeColor,opacity:isUnrelated?0.2:0.9});
-    aT(g,mx,my+3,String(ar.seqLabel||''),{'text-anchor':'middle','font-size':'8','fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:opacity});
+    drawSeqBadge(g,mx,my,9,strokeColor,String(ar.seqLabel||''),8,3,isUnrelated?0.2:0.9,opacity);
   });
 
   // ── System-only interactions ──
@@ -176,7 +140,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     sortedSysI.forEach(function(inter,iIdx){
       if(inter.triggerEventId||!inter.target) return;
       var ti2=sysArr.indexOf(inter.target); if(ti2===-1) return;
-      var color=inter.nature==='push'?svgColors().accent:inter.nature==='pull'?svgColors().teal:svgColors().proc;
+      var color=natureColor(inter.nature);
       var tLP=isLR?ti2*LG+BH/2+20:ti2*SG+BW/2+10;
       var tx=isLR?src.x+60:tLP, ty=isLR?tLP:src.y+80;
       sysArrows.push({
@@ -187,7 +151,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
       });
     });
   });
-  assignOffsets(sysArrows);
+  groupAndOffsetArrows(sysArrows,ARROW_OFFSET);
 
   // Draw system-only arrows
   sysArrows.forEach(function(ar){
@@ -218,8 +182,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     aL(g,x1,y1,x2,y2,{stroke:sysStroke,'stroke-width':sysW,'stroke-dasharray':'4,3','marker-end':mEnd,opacity:sysOpacity});
     var lmx=(x1+x2)/2, lmy=(y1+y2)/2;
     aT(g,lmx,lmy-8,ar.label,{'text-anchor':'middle','font-size':'9','fill':sysStroke,'font-family':'DM Mono,monospace',opacity:sysOpacity});
-    aC(g,lmx,lmy+4,8,{fill:sysStroke,opacity:isSysUnrelated?0.2:0.9});
-    aT(g,lmx,lmy+7,String(ar.seqIdx+1),{'text-anchor':'middle','font-size':'7','fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:sysOpacity});
+    drawSeqBadge(g,lmx,lmy+4,8,sysStroke,String(ar.seqIdx+1),7,3,isSysUnrelated?0.2:0.9,sysOpacity);
   });
 
   // New code for card interaction tooltips
@@ -314,12 +277,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     var selectEventHandler=(function(id){return function(ev2){
       if(hitRect.ownerSVGElement._didPan){hitRect.ownerSVGElement._didPan=false;return;}
       ev2.stopPropagation();
-      var idx=findEventByIdIdx(id);
-      if(idx>=0){
-        selectedEventId=(selectedEventId===id)?null:id;
-        render();
-        if(selectedEventId) editEvent(findEventByIdIdx(selectedEventId));
-      }
+      handleCanvasNodeClick(id);
     };})(evId);
     var contextMenuHandler=(function(id){return function(ev2){showEventContextMenu(ev2,id);};})(evId);
     hitRect.addEventListener('click',selectEventHandler);
@@ -333,9 +291,6 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     g.appendChild(countTooltip);
   });
   // Click on SVG background deselects
-  svg.addEventListener('click',function(){
-    if(svg._didPan){svg._didPan=false;return;}
-    if(selectedEventId){selectedEventId=null; render();}
-  });
+  svg.addEventListener('click',function(){handleCanvasBackgroundDeselect(svg);});
   parent.appendChild(svg);
 }
