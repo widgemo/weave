@@ -1,8 +1,23 @@
+// SCHEMA MIGRATION
+// Exported/persisted data carries a `version` field. Add a new `if(v<N){...}`
+// block here whenever the schema changes, instead of scattering ad hoc
+// compatibility checks through importData/loadAppState.
+var CURRENT_SCHEMA_VERSION=3;
+function migrateData(data){
+  var v=data.version||1;
+  if(v<3){
+    // Pre-v3 exports stored table mode as settings.viewMode='table' under appMode='timeline'
+    if(data.appMode==='timeline'&&data.settings&&data.settings.viewMode==='table') data.appMode='table';
+  }
+  data.version=CURRENT_SCHEMA_VERSION;
+  return data;
+}
+
 // IMPORT / EXPORT
 function exportData(){
   var defaultName=(scenName||'eventflow')+'-'+appMode+'-'+new Date().toISOString().slice(0,10)+'.json';
   promptExportFilename(defaultName,'Export Data',function(filename){
-    var data={version:3,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,levelsRegistry:levelsRegistry,
+    var data={version:CURRENT_SCHEMA_VERSION,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,levelsRegistry:levelsRegistry,
       displayConfig:displayConfig,
       settings:{orientation:document.getElementById('orientation').value,
                 showDate:displayConfig.showDate,
@@ -21,12 +36,11 @@ function importData(e){
   reader.onload=function(ev){
     try{
       var data=JSON.parse(ev.target.result);
+      data=migrateData(data);
       scenName=data.scenarioName||''; scenDesc=data.scenarioDesc||'';
       document.getElementById('scenario-name').value=scenName;
       document.getElementById('scenario-desc').value=scenDesc;
-      // Backward compat: old exports stored viewMode='table' under appMode='timeline'
       var importedMode=data.appMode||'timeline';
-      if(importedMode==='timeline'&&data.settings&&data.settings.viewMode==='table') importedMode='table';
       switchAppMode(importedMode);
       if(data.settings){
         document.getElementById('orientation').value=data.settings.orientation||'vertical';
@@ -72,7 +86,7 @@ var _persistTimer=null;
 
 function _doPersistAppState(){
   try{
-    var data={version:3,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,
+    var data={version:CURRENT_SCHEMA_VERSION,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,
       sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,
       displayConfig:{
         showLevel:displayConfig.showLevel,
@@ -112,6 +126,7 @@ function loadAppState(){
     var raw=localStorage.getItem(WEAVE_APP_STATE_KEY);
     if(!raw) return false;
     var data=JSON.parse(raw);
+    data=migrateData(data);
     scenName=data.scenarioName||''; scenDesc=data.scenarioDesc||'';
     var nameEl=document.getElementById('scenario-name');
     var descEl=document.getElementById('scenario-desc');
