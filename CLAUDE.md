@@ -26,6 +26,7 @@ Deployed as a GitHub Pages site.
 - `js/ui-sidebar.js` — banner chrome (file menu, theme toggle, legend), mode/tab switching, the event list, timezone selector, and app init
 - `js/ui-forms.js` — the event + interaction add/edit form, scenario save, clear/new-diagram actions
 - `js/ui-registry.js` — the Systems/Actors registry CRUD and system lane-order UI
+- `js/keyboard.js` — global keyboard shortcuts (delete/duplicate/nudge lane-or-sequence/escape) for canvas and Table mode selection
 - `js/datasource-auth.js` — data-source OAuth 2.0 (PKCE) flow, token storage, and the connection config UI
 - `js/datasource-query.js` — data-source query form, results list, and record→event field mapping
 

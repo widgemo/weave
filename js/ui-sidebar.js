@@ -245,6 +245,7 @@ document.addEventListener('DOMContentLoaded',function(){
   initLegend();
   applyTimelineReverseState();
   initDiagSliders();
+  initKeyboardShortcuts();
   document.getElementById('dc-level').checked=displayConfig.showLevel;
   document.getElementById('dc-event-code').checked=displayConfig.showEventCode;
   document.getElementById('dc-managed-integration-code').checked=displayConfig.showManagedIntegrationCode;

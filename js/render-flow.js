@@ -1,4 +1,9 @@
 // ── FLOW DIAGRAM ────────────────────────────────────
+// Cache of the last-computed, post-override causal order and event map —
+// refreshed on every Flow-mode render() — so keyboard sequence-nudging
+// (js/keyboard.js) can read "what's the current on-screen order" without
+// needing renderFlow's function-local topo-sort state.
+var _lastFlowOrder=[], _lastFlowEvMap={};
 function renderFlow(parent,direction,showSeq,filteredEvents){
   ensureIds();
   var evList=filteredEvents||events;
@@ -47,6 +52,7 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
     if(anchorPos<0){ order.splice(curPos,0,id); return; } // dangling anchor — put back, no-op
     order.splice(anchorPos+1,0,id);
   });
+  _lastFlowOrder=order.slice(); _lastFlowEvMap=evMap;
 
   var isLR=direction==='lr';
   var seqOf={}; order.forEach(function(id,i){seqOf[id]=i;});
