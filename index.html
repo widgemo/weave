@@ -109,6 +109,11 @@
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
     </button>
+    <button class="theme-btn" onclick="openShortcutsHelp()" title="Keyboard Shortcuts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">
       <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
         <circle cx="12" cy="12" r="5"/>
@@ -665,6 +670,26 @@
     <p class="about-version">Version <strong id="about-version-num"></strong></p>
     <p class="about-copy">&copy; <span id="about-year"></span> <a href="https://widgemo.com" target="_blank" rel="noopener noreferrer">Widgemo</a></p>
     <a class="about-link" href="https://widgemo.com" target="_blank" rel="noopener noreferrer">widgemo.com</a>
+    <a class="about-link" href="https://github.com/widgemo/weave/issues/new/choose" target="_blank" rel="noopener noreferrer" style="margin-top:8px">Report a bug or give feedback</a>
+  </div>
+</div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div class="modal-overlay log-modal-overlay" id="shortcuts-modal">
+  <div class="modal-card log-modal-card" role="dialog" aria-modal="true" aria-label="Keyboard Shortcuts">
+    <button class="modal-close" onclick="closeShortcutsHelp()" title="Close">&#x2715;</button>
+    <h2 class="about-title" style="font-size:1.15rem;margin-bottom:4px;text-align:left">Keyboard Shortcuts</h2>
+    <p class="about-sub" style="margin-bottom:12px;text-align:left">Available while a canvas event is selected (or a Table row is checked), and not while typing in a field</p>
+    <div class="shortcuts-list">
+      <div class="shortcuts-group-title">General</div>
+      <div class="shortcut-row"><span class="shortcut-desc">Delete the selected event, or every checked row in Table mode</span><span class="kbd">Delete</span></div>
+      <div class="shortcut-row"><span class="shortcut-desc">Duplicate the selected event</span><span class="kbd">Ctrl/Cmd</span><span class="kbd">D</span></div>
+      <div class="shortcut-row"><span class="shortcut-desc">Close the open modal or menu, or cancel the open Inspector form</span><span class="kbd">Esc</span></div>
+      <div class="shortcuts-group-title">Canvas (Timeline &amp; Flow)</div>
+      <div class="shortcut-row"><span class="shortcut-desc">Move the selected event to the adjacent lane</span><span class="kbd">&#8593;</span><span class="kbd">&#8595;</span><span class="kbd">&#8592;</span><span class="kbd">&#8594;</span></div>
+      <div class="shortcut-row"><span class="shortcut-desc">Reorder the selected event in Flow mode's causal sequence</span><span class="kbd">&#8593;</span><span class="kbd">&#8595;</span><span class="kbd">&#8592;</span><span class="kbd">&#8594;</span></div>
+      <p class="about-sub" style="margin-top:2px;text-align:left;font-size:.72rem">Whichever arrow-key pair moves lanes vs. reorders sequence follows the current orientation/direction toggle, so it always matches what's on screen.</p>
+    </div>
   </div>
 </div>
 
