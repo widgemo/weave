@@ -179,7 +179,7 @@ function saveEvent(){
   refreshDL(); clearForm(); render(); updateList(); refreshFilterBar(); refreshLevelDL();
 }
 function editEvent(idx){
-  var e=events[idx]; editIdx=idx; switchTab('add');
+  var e=events[idx]; editIdx=idx; inspectorOpen=true; switchTab('add');
   document.getElementById('desc').value=e.desc||'';
   document.getElementById('actor').value=e.actor||'';
   document.getElementById('system-input').value=e.system||'';
@@ -191,6 +191,7 @@ function editEvent(idx){
   var sortedInts=[...( e.interactions||[])].sort(function(a,b){return (a.order||0)-(b.order||0);});
   sortedInts.forEach(function(i,idx){addIField(i.target,i.delay||0,i.nature,i.triggerEventId||'',idx,i.label||'');});
   document.getElementById('cancel-edit').style.display='inline-flex';
+  _updateInspectorEmptyState();
   updateList();
 }
 function deleteEvent(idx){
@@ -203,7 +204,9 @@ function deleteEvent(idx){
     render(); updateList(); refreshFilterBar(); toast('Deleted','🗑');
   },'Delete','Delete Event');
 }
-function clearForm(){
+// Pure field reset — blanks inputs, clears interaction blocks, resets editIdx.
+// Does not touch selectedEventId, inspectorOpen, or panel visibility.
+function _resetFormFields(){
   document.getElementById('desc').value='';
   document.getElementById('actor').value='';
   document.getElementById('system-input').value='';
@@ -213,7 +216,28 @@ function clearForm(){
   document.getElementById('managed-integration-code').value='';
   clearI(); editIdx=-1;
   document.getElementById('cancel-edit').style.display='none';
+}
+// Shows the event form (blank if idx omitted) instead of the inspector's empty state.
+function _updateInspectorEmptyState(){
+  var empty=document.getElementById('inspector-empty');
+  var form=document.getElementById('inspector-form');
+  if(!empty||!form) return;
+  empty.style.display=inspectorOpen?'none':'flex';
+  form.style.display=inspectorOpen?'flex':'none';
+}
+function clearForm(){
+  _resetFormFields();
+  inspectorOpen=false;
   if(selectedEventId){selectedEventId=null; render();}
+  _updateInspectorEmptyState();
+  updateList();
+}
+function newEvent(){
+  if(selectedEventId){selectedEventId=null; render();}
+  _resetFormFields();
+  inspectorOpen=true;
+  switchTab('add');
+  _updateInspectorEmptyState();
   updateList();
 }
 function saveScenario(){

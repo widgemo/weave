@@ -139,6 +139,22 @@ function drawSeqBadge(g,cx,cy,r,color,label,fontSize,textDy,circleOpacity,textOp
   aT(g,cx,cy+textDy,label,{'text-anchor':'middle','font-size':String(fontSize),'fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:textOpacity});
 }
 
+// ── CANVAS NODE SELECTION (shared by render-flow.js & render-timeline.js) ──
+// Table mode is intentionally NOT wired to these — its row click calls
+// editEvent() directly with no toggle/deselect concept.
+function handleCanvasNodeClick(id){
+  var idx=findEventByIdIdx(id);
+  if(idx<0) return;
+  selectedEventId=(selectedEventId===id)?null:id;
+  render();
+  if(selectedEventId) editEvent(idx);
+  else clearForm();
+}
+function handleCanvasBackgroundDeselect(svg){
+  if(svg._didPan){svg._didPan=false;return;}
+  if(selectedEventId) clearForm();
+}
+
 // ── RENDER DISPATCH ─────────────────────────────────────
 function render(){
   var ca=document.getElementById('chart'); ca.innerHTML='';

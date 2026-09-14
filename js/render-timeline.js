@@ -398,20 +398,12 @@ function renderTimeline(parent,sorted,orientation){
     hitCircle.addEventListener('click',(function(evId){return function(ev2){
       if(hitCircle.ownerSVGElement._didPan){hitCircle.ownerSVGElement._didPan=false;return;}
       ev2.stopPropagation();
-      var idx=findEventByIdIdx(evId);
-      if(idx>=0){
-        selectedEventId=(selectedEventId===evId)?null:evId;
-        render();
-        if(selectedEventId) editEvent(findEventByIdIdx(selectedEventId));
-      }
+      handleCanvasNodeClick(evId);
     };})(e._id));
     hitCircle.addEventListener('contextmenu',(function(evId){return function(ev2){showEventContextMenu(ev2,evId);};})(e._id));
     g.appendChild(hitCircle);
   });
   // Click on SVG background deselects
-  svg.addEventListener('click',function(){
-    if(svg._didPan){svg._didPan=false;return;}
-    if(selectedEventId){selectedEventId=null; render();}
-  });
+  svg.addEventListener('click',function(){handleCanvasBackgroundDeselect(svg);});
   parent.appendChild(svg);
 }
