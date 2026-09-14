@@ -148,6 +148,33 @@ function drawSeqBadge(g,cx,cy,r,color,label,fontSize,textDy,circleOpacity,textOp
   aT(g,cx,cy+textDy,label,{'text-anchor':'middle','font-size':String(fontSize),'fill':'#fff','font-weight':'800','font-family':'DM Mono,monospace',opacity:textOpacity});
 }
 
+// Bulk-deletes every checked Table-mode row (tableSelection). Shared by the
+// "Delete Selected" button (renderTable) and the Delete-key shortcut.
+function deleteSelectedTableRows(){
+  var ids=[...tableSelection];
+  if(!ids.length) return;
+  showConfirm(
+    'Delete '+ids.length+' selected event'+(ids.length!==1?'s':'')+' ? This cannot be undone.',
+    function(){
+      var editEvId=editIdx>=0&&events[editIdx]?events[editIdx]._id:'';
+      var editWasDeleted=editEvId&&tableSelection.has(editEvId);
+      var remaining=events.filter(function(ev){return !tableSelection.has(ev._id);});
+      events.length=0; remaining.forEach(function(ev){events.push(ev);});
+      tableSelection.clear();
+      if(editWasDeleted){
+        clearForm();
+      } else if(editEvId){
+        editIdx=findEventByIdIdx(editEvId);
+        if(editIdx<0) clearForm();
+      }
+      render(); updateList(); refreshFilterBar();
+      toast('Deleted '+ids.length+' event'+(ids.length!==1?'s':''),'🗑');
+    },
+    'Delete '+ids.length,
+    'Delete Selected Events'
+  );
+}
+
 // ── CANVAS NODE SELECTION (shared by render-flow.js & render-timeline.js) ──
 // Table mode is intentionally NOT wired to these — its row click calls
 // editEvent() directly with no toggle/deselect concept.
@@ -516,29 +543,7 @@ function renderTable(parent,sorted){
     var delSelBtn=document.createElement('button');
     delSelBtn.className='btn btn-d btn-sm';
     delSelBtn.textContent='\uD83D\uDDD1 Delete Selected';
-    delSelBtn.onclick=function(){
-      var ids=[...tableSelection];
-      showConfirm(
-        'Delete '+ids.length+' selected event'+(ids.length!==1?'s':'')+' ? This cannot be undone.',
-        function(){
-          var editEvId=editIdx>=0&&events[editIdx]?events[editIdx]._id:'';
-          var editWasDeleted=editEvId&&tableSelection.has(editEvId);
-          var remaining=events.filter(function(ev){return !tableSelection.has(ev._id);});
-          events.length=0; remaining.forEach(function(ev){events.push(ev);});
-          tableSelection.clear();
-          if(editWasDeleted){
-            clearForm();
-          } else if(editEvId){
-            editIdx=findEventByIdIdx(editEvId);
-            if(editIdx<0) clearForm();
-          }
-          render(); updateList(); refreshFilterBar();
-          toast('Deleted '+ids.length+' event'+(ids.length!==1?'s':''),'\uD83D\uDDD1');
-        },
-        'Delete '+ids.length,
-        'Delete Selected Events'
-      );
-    };
+    delSelBtn.onclick=deleteSelectedTableRows;
     var clearSelBtn=document.createElement('button');
     clearSelBtn.className='btn btn-s btn-sm';
     clearSelBtn.textContent='Clear selection';
