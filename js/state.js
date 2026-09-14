@@ -1,5 +1,5 @@
 // ── STATE ───────────────────────────────────────────────
-var APP_VERSION = '2026.09.14.124330';
+var APP_VERSION = '2026.09.14.190925';
 var events=[], editIdx=-1, iCount=0, scenName='', scenDesc='', appMode='timeline';
 var selectedEventId=null; // _id of currently selected/highlighted event
 var inspectorOpen=false; // true = panel-add shows the event form (new or edit); false = empty placeholder
