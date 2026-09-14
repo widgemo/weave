@@ -174,6 +174,10 @@ function saveEvent(){
     managedIntegrationCode:(document.getElementById('managed-integration-code').value||'').trim()||null,
     timestamp:ts,timestampStr:tsStr,interactions:ints,mode:appMode
   };
+  // Preserve fields not represented in this form (e.g. layoutAfterId, a
+  // canvas-only Flow-mode sequence override) so editing/saving an event
+  // doesn't silently wipe them.
+  if(editIdx>=0&&events[editIdx].layoutAfterId!==undefined) ev.layoutAfterId=events[editIdx].layoutAfterId;
   if(editIdx>=0){events[editIdx]=ev;toast('Event updated','✏');}
   else{events.push(ev);toast('Event saved','✓');}
   refreshDL(); clearForm(); render(); updateList(); refreshFilterBar(); refreshLevelDL();

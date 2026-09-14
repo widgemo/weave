@@ -2,12 +2,17 @@
 // Exported/persisted data carries a `version` field. Add a new `if(v<N){...}`
 // block here whenever the schema changes, instead of scattering ad hoc
 // compatibility checks through importData/loadAppState.
-var CURRENT_SCHEMA_VERSION=3;
+var CURRENT_SCHEMA_VERSION=4;
 function migrateData(data){
   var v=data.version||1;
   if(v<3){
     // Pre-v3 exports stored table mode as settings.viewMode='table' under appMode='timeline'
     if(data.appMode==='timeline'&&data.settings&&data.settings.viewMode==='table') data.appMode='table';
+  }
+  if(v<4){
+    // v4 added events[].layoutAfterId (manual Flow-mode sequence override).
+    // Optional/absent-safe field — pre-v4 events simply have no override
+    // and behave exactly as before, no data transformation needed.
   }
   data.version=CURRENT_SCHEMA_VERSION;
   return data;
