@@ -2,7 +2,7 @@
 // Exported/persisted data carries a `version` field. Add a new `if(v<N){...}`
 // block here whenever the schema changes, instead of scattering ad hoc
 // compatibility checks through importData/loadAppState.
-var CURRENT_SCHEMA_VERSION=4;
+var CURRENT_SCHEMA_VERSION=5;
 function migrateData(data){
   var v=data.version||1;
   if(v<3){
@@ -13,6 +13,11 @@ function migrateData(data){
     // v4 added events[].layoutAfterId (manual Flow-mode sequence override).
     // Optional/absent-safe field — pre-v4 events simply have no override
     // and behave exactly as before, no data transformation needed.
+  }
+  if(v<5){
+    // v5 added interactions[].manual (auto vs. manual trigger flag).
+    // Optional/absent-safe — pre-v5 interactions have no manual flag and
+    // are treated as automatic (the default); no data transformation needed.
   }
   data.version=CURRENT_SCHEMA_VERSION;
   return data;

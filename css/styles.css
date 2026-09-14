@@ -311,6 +311,7 @@ html.dark .elevel-debug{background:rgba(136,153,200,.12);color:#99aacc}
 .leg-item{display:flex;align-items:center;gap:8px}
 .leg-line{display:inline-block;width:18px;border-bottom:2px solid currentColor;flex-shrink:0}
 .leg-line-proc{border-style:dashed}
+.leg-line-manual{border-style:dotted}
 .leg-label{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--text2);white-space:nowrap}
 #legend-toggle-btn.active{background:var(--surface3);border-color:var(--accent);color:var(--accent)}
 #tl-reverse-btn.active{background:var(--surface3);border-color:var(--accent);color:var(--accent)}

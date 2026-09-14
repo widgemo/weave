@@ -307,7 +307,7 @@ function renderTimeline(parent,sorted,orientation){
       }
       arrows.push({
         sx:sx,sy:sy,tx:tx,ty:ty,
-        nature:inter.nature,color:ic,
+        nature:inter.nature,manual:!!inter.manual,color:ic,
         label:inter.label||(appMode==='timeline'&&inter.delay?inter.nature+' +'+inter.delay+'ms':''),
         seqIdx:iIdx,_offset:0,
         srcEvId:e._id, tgtSystem:inter.target
@@ -342,7 +342,7 @@ function renderTimeline(parent,sorted,orientation){
     var strokeColor=isFromSel?svgColors().hlSel:isToSel?svgColors().hlRel:ar.color;
     var opacity=isUnrelated?0.25:1;
 
-    aL(g,x1,y1,x2,y2,{stroke:strokeColor,'stroke-width':strokeW,'stroke-dasharray':ar.nature==='process'?'5,3':'','marker-end':mEnd,opacity:opacity});
+    aL(g,x1,y1,x2,y2,{stroke:strokeColor,'stroke-width':strokeW,'stroke-dasharray':interactionDasharray(ar.nature,ar.manual,'5,3'),'marker-end':mEnd,opacity:opacity});
     var mx=(x1+x2)/2+(isH?0:5), my=(y1+y2)/2-18;
     aT(g,mx,my,ar.label,{'text-anchor':'middle','font-size':'11','fill':strokeColor,'font-family':'DM Mono,monospace',opacity:opacity});
     var bmx=(x1+x2)/2, bmy=(y1+y2)/2;
