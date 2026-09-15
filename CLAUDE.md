@@ -107,12 +107,23 @@ in `js/import-export.js`.
   field=`table`, Interactions field=`interactions`, Target field=`target`,
   Nature field=`nature`, Triggers Event field=`triggerEventId`. Note `nature`
   must already be exactly `push`/`pull`/`process` when it arrives — translating
-  GlideRecord operation names (query/insert/update/etc.) into that vocabulary is
-  the source endpoint's job, not Weave's. **Known limitation** (pre-existing Flow
-  rendering behavior, not specific to this mapping): a `triggerEventId` that
-  doesn't resolve to any currently-loaded event — e.g. the target script was
-  filtered out of the query, or lives on a page never fetched — silently produces
-  no edge at all for that interaction, neither causal nor lane-based.
+  GlideRecord operation names into that vocabulary is the source endpoint's job,
+  not Weave's: `.get()`/`.query()`/`.addQuery()` reads → `pull`;
+  `.insert()`/`.update()`/`.deleteRecord()` → `push`; a GlideRecord instantiated
+  but never queried/written, or a pure script-to-script call, → `process`. A
+  script with no outbound calls/table access still needs its own record (with an
+  empty `interactions` array, as `def456` above) purely so its `sys_id` is a
+  valid target/trigger for others. Send only the resolved relationships, not
+  full script source, in the response — the importer parses the whole HTTP
+  response as JSON in one call, so keep payloads to the graph, not script text;
+  if paginating many scripts, support an offset query param and configure its
+  name in the panel's "Offset Param Name" field. **Known limitation**
+  (pre-existing Flow rendering behavior, not specific to this mapping): a
+  `triggerEventId` that doesn't resolve to any currently-loaded event — e.g. the
+  target script was filtered out of the query, or lives on a page never
+  fetched, or across separate "Import All" runs the target was never imported —
+  silently produces no edge at all for that interaction, neither causal nor
+  lane-based.
 
 ## Important constraints
 - Must remain deployable as static GitHub Pages (no server, no build step)
