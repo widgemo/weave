@@ -391,6 +391,11 @@
           <div id="ds-preview-body"></div>
         </div>
         <div class="fg" style="margin-top:4px">
+          <label class="fl">Record ID field <span class="hint">(optional)</span></label>
+          <input type="text" id="ds-id-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. sys_id" autocomplete="off">
+          <span class="hint">A stable field so other imported records can reference this one via Triggers Event, below</span>
+        </div>
+        <div class="fg" style="margin-top:4px">
           <label class="fl">Description field</label>
           <input type="text" id="ds-desc-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. name, title, description" autocomplete="off">
         </div>
@@ -450,6 +455,11 @@
         <div class="fg" style="margin-top:4px">
           <label class="fl">&#x21B3; Order field</label>
           <input type="text" id="ds-int-order-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. order" autocomplete="off">
+        </div>
+        <div class="fg" style="margin-top:4px">
+          <label class="fl">&#x21B3; Triggers Event field <span class="hint">(optional)</span></label>
+          <input type="text" id="ds-int-trigger-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. calls_sys_id" autocomplete="off">
+          <span class="hint">The value of another record's ID field (above) that this interaction should link to &mdash; a causal edge in Flow mode</span>
         </div>
         <div class="sep"></div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
