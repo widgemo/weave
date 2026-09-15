@@ -10,6 +10,7 @@ var dsPagingOffset = 0; // current offset for Prev/Next; reset on every fresh Ru
 // 8-positional-argument signature shared by dsShowResults/dsRecordToEvent.
 function dsReadFieldMapping() {
   return {
+    idField:         document.getElementById('ds-id-field').value.trim(),
     descField:       document.getElementById('ds-desc-field').value.trim(),
     sysField:        document.getElementById('ds-sys-field').value.trim(),
     actorField:      document.getElementById('ds-actor-field').value.trim(),
@@ -23,7 +24,8 @@ function dsReadFieldMapping() {
       natureField: document.getElementById('ds-int-nature-field').value.trim(),
       labelField:  document.getElementById('ds-int-label-field').value.trim(),
       delayField:  document.getElementById('ds-int-delay-field').value.trim(),
-      orderField:  document.getElementById('ds-int-order-field').value.trim()
+      orderField:  document.getElementById('ds-int-order-field').value.trim(),
+      triggerField: document.getElementById('ds-int-trigger-field').value.trim()
     }
   };
 }
@@ -35,6 +37,7 @@ function dsReadFieldMapping() {
 // requires (system).
 function dsMapRecordFields(rec, fm) {
   fm = fm || {};
+  var id        = fm.idField        ? dsGetFieldVal(rec, fm.idField)        : '';
   var desc      = dsGetRecordDesc(rec, fm.descField);
   var sys       = fm.sysField       ? dsGetFieldVal(rec, fm.sysField)       : '';
   var actor     = fm.actorField     ? dsGetFieldVal(rec, fm.actorField)     : '';
@@ -68,6 +71,7 @@ function dsMapRecordFields(rec, fm) {
         var label  = cfg.labelField  ? dsGetFieldVal(intRec, cfg.labelField)  : '';
         var delay  = cfg.delayField  ? dsGetFieldVal(intRec, cfg.delayField)  : '';
         var order  = cfg.orderField  ? dsGetFieldVal(intRec, cfg.orderField)  : '';
+        var trigger = cfg.triggerField ? dsGetFieldVal(intRec, cfg.triggerField) : '';
         if (!target) return;
         // Default to 'push' when nature is missing or unrecognised
         var normNature = validNatures.indexOf(nature) !== -1 ? nature : 'push';
@@ -77,12 +81,14 @@ function dsMapRecordFields(rec, fm) {
           nature: normNature,
           label:  label  || '',
           delay:  delay  || '',
-          order:  orderNum
+          order:  orderNum,
+          triggerEventId: trigger || ''
         });
       });
     }
   }
   return {
+    id:                      id        || '',
     desc:                    desc,
     system:                  sys       || '',
     actor:                   actor     || '',
@@ -255,7 +261,7 @@ function dsUpdatePreview() {
       ? '<span class="v empty">&mdash;</span>' : '<span class="v">' + esc(String(val)) + '</span>';
     return '<div class="ds-preview-row"><span class="k">' + esc(label) + '</span>' + v + '</div>';
   }
-  var html = row('Description', mapped.desc) + row('System', mapped.system) +
+  var html = row('ID', mapped.id) + row('Description', mapped.desc) + row('System', mapped.system) +
              row('Actor', mapped.actor) + row('Timestamp', mapped.timestampStr) +
              row('Event Code', mapped.eventCode) + row('Level', mapped.level) +
              row('Integration Code', mapped.managedIntegrationCode);
@@ -328,7 +334,7 @@ function dsRecordToEvent(rec, fm) {
   var mapped = dsMapRecordFields(rec, fm);
   mapped.interactions.forEach(function(i) { if (i.target) knownSys.add(i.target); });
   var ev = {
-    _id:                      'ds-' + Date.now() + '-' + dsRandomSuffix(),
+    _id:                      mapped.id || ('ds-' + Date.now() + '-' + dsRandomSuffix()),
     desc:                     mapped.desc,
     system:                   mapped.system,
     actor:                    mapped.actor,
@@ -364,6 +370,7 @@ function dsReadQueryForm() {
     queryParams:        (document.getElementById('ds-query').value                    || '').trim(),
     pageSize:           (document.getElementById('ds-page-size').value                || '').trim(),
     offsetParam:        (document.getElementById('ds-offset-param').value             || '').trim(),
+    idField:            (document.getElementById('ds-id-field').value                 || '').trim(),
     descField:          (document.getElementById('ds-desc-field').value               || '').trim(),
     sysField:           (document.getElementById('ds-sys-field').value                || '').trim(),
     actorField:         (document.getElementById('ds-actor-field').value              || '').trim(),
@@ -376,7 +383,8 @@ function dsReadQueryForm() {
     intNatureField:     (document.getElementById('ds-int-nature-field').value         || '').trim(),
     intLabelField:      (document.getElementById('ds-int-label-field').value          || '').trim(),
     intDelayField:      (document.getElementById('ds-int-delay-field').value          || '').trim(),
-    intOrderField:      (document.getElementById('ds-int-order-field').value          || '').trim()
+    intOrderField:      (document.getElementById('ds-int-order-field').value          || '').trim(),
+    intTriggerField:    (document.getElementById('ds-int-trigger-field').value        || '').trim()
   };
 }
 
@@ -385,6 +393,7 @@ function dsPopulateQueryForm(q) {
   document.getElementById('ds-query').value                       = q.queryParams        || '';
   document.getElementById('ds-page-size').value                   = q.pageSize           || '20';
   document.getElementById('ds-offset-param').value                = q.offsetParam        || '';
+  document.getElementById('ds-id-field').value                    = q.idField            || '';
   document.getElementById('ds-desc-field').value                  = q.descField          || '';
   document.getElementById('ds-sys-field').value                   = q.sysField           || '';
   document.getElementById('ds-actor-field').value                 = q.actorField         || '';
@@ -398,6 +407,7 @@ function dsPopulateQueryForm(q) {
   document.getElementById('ds-int-label-field').value             = q.intLabelField      || '';
   document.getElementById('ds-int-delay-field').value             = q.intDelayField      || '';
   document.getElementById('ds-int-order-field').value             = q.intOrderField      || '';
+  document.getElementById('ds-int-trigger-field').value           = q.intTriggerField    || '';
 }
 
 function dsSaveQueryLocal() {
@@ -409,7 +419,7 @@ function dsLoadQueryLocal() {
 }
 
 function dsIsQueryEmpty(q) {
-  return !q.endpoint && !q.queryParams && !q.descField && !q.sysField && !q.actorField &&
+  return !q.endpoint && !q.queryParams && !q.idField && !q.descField && !q.sysField && !q.actorField &&
          !q.tsField && !q.eventCodeField && !q.levelField && !q.integCodeField &&
          !q.interactionsField;
 }
@@ -421,6 +431,7 @@ function dsExportQuery() {
     return;
   }
   var fieldMap = {
+    id:              q.idField,
     desc:            q.descField,
     system:          q.sysField,
     actor:           q.actorField,
@@ -434,7 +445,8 @@ function dsExportQuery() {
       natureField: q.intNatureField,
       labelField:  q.intLabelField,
       delayField:  q.intDelayField,
-      orderField:  q.intOrderField
+      orderField:  q.intOrderField,
+      triggerField: q.intTriggerField
     }
   };
   var exportObj = { weaveDsQuery: true, endpoint: q.endpoint, queryParams: q.queryParams,
@@ -469,6 +481,7 @@ function dsImportQueryFile(e) {
         queryParams:       data.queryParams || '',
         pageSize:          data.pageSize    || '20',
         offsetParam:       data.offsetParam || '',
+        idField:           fm.id           || '',
         descField:         fm.desc          || '',
         sysField:          fm.system        || '',
         actorField:        fm.actor         || '',
@@ -481,7 +494,8 @@ function dsImportQueryFile(e) {
         intNatureField:    intFm.natureField  || '',
         intLabelField:     intFm.labelField   || '',
         intDelayField:     intFm.delayField   || '',
-        intOrderField:     intFm.orderField   || ''
+        intOrderField:     intFm.orderField   || '',
+        intTriggerField:   intFm.triggerField || ''
       });
       dsSaveQueryLocal();
       toast('Query imported', '↑');

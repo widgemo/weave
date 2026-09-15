@@ -75,6 +75,44 @@ in `js/import-export.js`.
   standalone JSON file, independent of the diagram JSON export.
 - Both files are loaded after `js/ui-modals.js` (for `promptExportFilename`) and
   before the inline `dsInit()` call at the end of `index.html`.
+- **Stable IDs and causal (Triggers Event) chains**: the field-mapping form has an
+  optional "Record ID field" (mapped onto the imported event's `_id`, instead of an
+  auto-generated one) and, per-interaction, an optional "Triggers Event field"
+  (mapped onto `interactions[].triggerEventId`). Neither is ServiceNow-specific —
+  they're generic importer capabilities that let *any* source express causal links
+  between records it returns (e.g. "this Business Rule's execution leads into that
+  Script Include"), which Flow mode already renders as a topologically-sorted
+  arrow rather than a lane-based one. Example: importing ServiceNow Business
+  Rules/Script Includes from a custom Scripted REST API that has already resolved
+  each script's GlideRecord table usage server-side (Weave itself does no
+  script-source parsing — keeping this generic importer instance-agnostic per the
+  constraint above):
+  ```json
+  {
+    "result": [
+      {
+        "sys_id": "abc123",
+        "name": "Update Related Cases",
+        "table": "incident",
+        "interactions": [
+          {"target": "sys_user", "nature": "pull", "label": "look up caller"},
+          {"target": "def456", "nature": "process", "label": "calls MyScriptInclude.doThing()", "triggerEventId": "def456"}
+        ]
+      },
+      {"sys_id": "def456", "name": "MyScriptInclude.doThing", "table": "global", "interactions": []}
+    ]
+  }
+  ```
+  mapped with: Record ID field=`sys_id`, Description field=`name`, System
+  field=`table`, Interactions field=`interactions`, Target field=`target`,
+  Nature field=`nature`, Triggers Event field=`triggerEventId`. Note `nature`
+  must already be exactly `push`/`pull`/`process` when it arrives — translating
+  GlideRecord operation names (query/insert/update/etc.) into that vocabulary is
+  the source endpoint's job, not Weave's. **Known limitation** (pre-existing Flow
+  rendering behavior, not specific to this mapping): a `triggerEventId` that
+  doesn't resolve to any currently-loaded event — e.g. the target script was
+  filtered out of the query, or lives on a page never fetched — silently produces
+  no edge at all for that interaction, neither causal nor lane-based.
 
 ## Important constraints
 - Must remain deployable as static GitHub Pages (no server, no build step)
