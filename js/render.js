@@ -531,6 +531,14 @@ function renderTable(parent,sorted){
     });
   }
 
+  // Row count — always visible, independent of selection state (matches
+  // the existing Events-tab #ecount convention: a plain .hint span).
+  var infoBar=document.createElement('div');
+  infoBar.className='hint';
+  infoBar.style.cssText='padding:4px 12px 0';
+  infoBar.textContent=rows.length+' row'+(rows.length!==1?'s':'');
+  parent.appendChild(infoBar);
+
   // Selection action bar
   var selCount=0;
   rows.forEach(function(e){if(tableSelection.has(e._id)) selCount++;});

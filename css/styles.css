@@ -542,6 +542,7 @@ html.dark .log-badge-error{background:#e05555}
 .ds-result-actor{font-size:.67rem;color:var(--text3);font-family:'DM Mono',monospace}
 .ds-result-ts{font-size:.66rem;color:var(--text3);margin-left:auto}
 .ds-result-warn{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--warn);font-weight:600}
+.ds-result-dup{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--accent2);font-weight:600}
 .ds-add-btn{align-self:flex-start;margin-top:2px}
 
 /* Field-mapping live preview */
@@ -554,6 +555,7 @@ html.dark .log-badge-error{background:#e05555}
 .ds-preview-row .v{color:var(--text);word-break:break-word}
 .ds-preview-row .v.empty{color:var(--text3);font-style:italic}
 .ds-preview-warn{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--warn);font-weight:600;margin-top:2px}
+.ds-preview-dup{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--accent2);font-weight:600;margin-top:2px}
 
 /* Inline query error/warning */
 .ds-query-error{background:rgba(192,57,43,.08);border:1px solid var(--danger);border-radius:8px;
