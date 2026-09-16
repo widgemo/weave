@@ -120,8 +120,21 @@ function dsBuildParams(queryStr, offsetParamName, offset) {
   return params;
 }
 
+// Toggles the Query Parameters field vs. the Request Body field based on
+// the selected method — the two are independent fields (not one field
+// reinterpreted) so switching methods never discards either value.
+function dsUpdateMethodUI() {
+  var method = (document.getElementById('ds-method') || {}).value || 'get';
+  var isPost = method === 'post';
+  var queryFg = document.getElementById('ds-query-fg');
+  var bodyFg  = document.getElementById('ds-body-fg');
+  if (queryFg) queryFg.style.display = isPost ? 'none' : '';
+  if (bodyFg)  bodyFg.style.display  = isPost ? '' : 'none';
+}
+
 // Single funnel both a fresh "Run Query" click and Prev/Next go through.
-function dsExecuteQuery(endpoint, queryStr, offset, fm) {
+function dsExecuteQuery(endpoint, queryStr, offset, fm, method, body) {
+  method = method || 'get';
   var offsetParamName = document.getElementById('ds-offset-param').value.trim();
   var pageSize = parseInt(document.getElementById('ds-page-size').value, 10) || 20;
   var params = dsBuildParams(queryStr, offsetParamName, offset);
@@ -134,7 +147,7 @@ function dsExecuteQuery(endpoint, queryStr, offset, fm) {
   resultsEl.innerHTML = '';
   resultsEl._records = null;
 
-  dsApiGet(endpoint, params)
+  dsApiRequest(method, endpoint, params, method === 'post' ? body : null)
     .then(function(data) {
       if (!data) {
         statusEl.textContent = '';
@@ -160,26 +173,36 @@ function dsExecuteQuery(endpoint, queryStr, offset, fm) {
 
 function dsRunQuery() {
   var endpoint = document.getElementById('ds-endpoint').value.trim();
+  var method   = (document.getElementById('ds-method').value || 'get').trim();
   var queryStr = document.getElementById('ds-query').value.trim();
+  var body     = document.getElementById('ds-body').value;
   if (!endpoint) { toast('Endpoint path is required', '!'); return; }
+  if (method === 'post' && body.trim()) {
+    try { JSON.parse(body); }
+    catch (e) { toast('Request body is not valid JSON', '!'); return; }
+  }
   var fm = dsReadFieldMapping();
   dsSaveQueryLocal();
   dsPagingOffset = 0; // a fresh Run Query always resets paging
-  dsExecuteQuery(endpoint, queryStr, 0, fm);
+  dsExecuteQuery(endpoint, queryStr, 0, fm, method, body);
 }
 
 function dsNextPage() {
   var endpoint  = document.getElementById('ds-endpoint').value.trim();
+  var method    = document.getElementById('ds-method').value || 'get';
   var queryStr  = document.getElementById('ds-query').value.trim();
+  var body      = document.getElementById('ds-body').value;
   var pageSize  = parseInt(document.getElementById('ds-page-size').value, 10) || 20;
-  dsExecuteQuery(endpoint, queryStr, dsPagingOffset + pageSize, dsReadFieldMapping());
+  dsExecuteQuery(endpoint, queryStr, dsPagingOffset + pageSize, dsReadFieldMapping(), method, body);
 }
 
 function dsPrevPage() {
   var endpoint  = document.getElementById('ds-endpoint').value.trim();
+  var method    = document.getElementById('ds-method').value || 'get';
   var queryStr  = document.getElementById('ds-query').value.trim();
+  var body      = document.getElementById('ds-body').value;
   var pageSize  = parseInt(document.getElementById('ds-page-size').value, 10) || 20;
-  dsExecuteQuery(endpoint, queryStr, Math.max(0, dsPagingOffset - pageSize), dsReadFieldMapping());
+  dsExecuteQuery(endpoint, queryStr, Math.max(0, dsPagingOffset - pageSize), dsReadFieldMapping(), method, body);
 }
 
 function dsUpdatePagingControls(offsetParamName, pageSize, currentOffset, recordCount) {
@@ -367,7 +390,9 @@ function dsRecordToEvent(rec, fm) {
 function dsReadQueryForm() {
   return {
     endpoint:           (document.getElementById('ds-endpoint').value                 || '').trim(),
+    method:             (document.getElementById('ds-method').value                   || 'get').trim(),
     queryParams:        (document.getElementById('ds-query').value                    || '').trim(),
+    body:               (document.getElementById('ds-body').value                     || '').trim(),
     pageSize:           (document.getElementById('ds-page-size').value                || '').trim(),
     offsetParam:        (document.getElementById('ds-offset-param').value             || '').trim(),
     idField:            (document.getElementById('ds-id-field').value                 || '').trim(),
@@ -390,7 +415,9 @@ function dsReadQueryForm() {
 
 function dsPopulateQueryForm(q) {
   document.getElementById('ds-endpoint').value                    = q.endpoint           || '';
+  document.getElementById('ds-method').value                      = q.method            || 'get';
   document.getElementById('ds-query').value                       = q.queryParams        || '';
+  document.getElementById('ds-body').value                        = q.body              || '';
   document.getElementById('ds-page-size').value                   = q.pageSize           || '20';
   document.getElementById('ds-offset-param').value                = q.offsetParam        || '';
   document.getElementById('ds-id-field').value                    = q.idField            || '';
@@ -408,6 +435,7 @@ function dsPopulateQueryForm(q) {
   document.getElementById('ds-int-delay-field').value             = q.intDelayField      || '';
   document.getElementById('ds-int-order-field').value             = q.intOrderField      || '';
   document.getElementById('ds-int-trigger-field').value           = q.intTriggerField    || '';
+  dsUpdateMethodUI();
 }
 
 function dsSaveQueryLocal() {
@@ -419,7 +447,7 @@ function dsLoadQueryLocal() {
 }
 
 function dsIsQueryEmpty(q) {
-  return !q.endpoint && !q.queryParams && !q.idField && !q.descField && !q.sysField && !q.actorField &&
+  return !q.endpoint && !q.queryParams && !q.body && !q.idField && !q.descField && !q.sysField && !q.actorField &&
          !q.tsField && !q.eventCodeField && !q.levelField && !q.integCodeField &&
          !q.interactionsField;
 }
@@ -449,8 +477,8 @@ function dsExportQuery() {
       triggerField: q.intTriggerField
     }
   };
-  var exportObj = { weaveDsQuery: true, endpoint: q.endpoint, queryParams: q.queryParams,
-    pageSize: q.pageSize, offsetParam: q.offsetParam, fieldMap: fieldMap };
+  var exportObj = { weaveDsQuery: true, endpoint: q.endpoint, method: q.method, queryParams: q.queryParams,
+    body: q.body, pageSize: q.pageSize, offsetParam: q.offsetParam, fieldMap: fieldMap };
   promptExportFilename('weave-ds-query.json','Export Query',function(filename){
     var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
     triggerDownload(blob, filename);
@@ -478,7 +506,9 @@ function dsImportQueryFile(e) {
       var intFm = fm.interactions || {};
       dsPopulateQueryForm({
         endpoint:          data.endpoint    || '',
+        method:            data.method      || 'get',
         queryParams:       data.queryParams || '',
+        body:              data.body        || '',
         pageSize:          data.pageSize    || '20',
         offsetParam:       data.offsetParam || '',
         idField:           fm.id           || '',

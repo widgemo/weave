@@ -361,9 +361,21 @@
           <span class="hint">Path from base URL</span>
         </div>
         <div class="fg">
+          <label class="fl">Method</label>
+          <select id="ds-method" onchange="dsUpdateMethodUI()">
+            <option value="get">GET</option>
+            <option value="post">POST</option>
+          </select>
+        </div>
+        <div class="fg" id="ds-query-fg">
           <label class="fl">Query Parameters <span class="hint">(optional)</span></label>
           <input type="text" id="ds-query" placeholder="e.g. limit=20&amp;filter=active=true" autocomplete="off">
           <span class="hint">URL query string (key=value pairs separated by &amp;)</span>
+        </div>
+        <div class="fg" id="ds-body-fg" style="display:none">
+          <label class="fl">Request Body (JSON) <span class="hint">(optional)</span></label>
+          <textarea id="ds-body" rows="6" placeholder='e.g. {"type":"script_include","sys_id":"abc123","traverse":true,"max_depth":3}' style="font-family:'DM Mono',monospace;font-size:.78rem;resize:vertical"></textarea>
+          <span class="hint">Sent as the raw POST body with Content-Type: application/json</span>
         </div>
         <div class="mgrid" style="margin-top:4px">
           <div class="fg">

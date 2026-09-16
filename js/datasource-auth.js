@@ -238,7 +238,13 @@ function dsLogout() {
 }
 
 // ── REST API ───────────────────────────────────────────────────────────────
-function dsApiGet(path, queryParams) {
+// Generic authenticated request. `method` is 'GET'/'POST'/etc (default GET);
+// `queryParams` are appended to the URL regardless of method (e.g. an offset
+// param still works alongside a POST body); `body`, when given on a non-GET
+// request, is sent as-is with Content-Type: application/json — the caller
+// (dsExecuteQuery) is responsible for it already being valid JSON text.
+function dsApiRequest(method, path, queryParams, body) {
+  method = (method || 'GET').toUpperCase();
   if (!path) {
     appLog('error', 'Data source query endpoint path is required');
     return Promise.reject(new Error('Data source endpoint path is required'));
@@ -257,12 +263,16 @@ function dsApiGet(path, queryParams) {
       if (qs) url += (url.indexOf('?') === -1 ? '?' : '&') + qs;
     }
     resolvedUrl = url;
-    return fetch(url, {
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Accept':        'application/json'
-      }
-    });
+    var headers = {
+      'Authorization': 'Bearer ' + token,
+      'Accept':        'application/json'
+    };
+    var fetchOpts = { method: method, headers: headers };
+    if (method !== 'GET' && body) {
+      headers['Content-Type'] = 'application/json';
+      fetchOpts.body = body;
+    }
+    return fetch(url, fetchOpts);
   }).then(function(resp) {
     if (!resp) return null;
     if (!resp.ok) {
@@ -284,6 +294,10 @@ function dsApiGet(path, queryParams) {
     appLog('error', 'API request failed: ' + msg, detail);
     throw e;
   });
+}
+// Kept as a thin GET-only alias for backward compatibility with any other caller.
+function dsApiGet(path, queryParams) {
+  return dsApiRequest('GET', path, queryParams);
 }
 
 // ── STATE HELPERS ──────────────────────────────────────────────────────────
