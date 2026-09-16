@@ -227,7 +227,10 @@ function renderTimeline(parent,sorted,orientation){
     var pos=lp(i);
     if(i%2===0) aR(g,isH?-mg.left:pos-LANE/2,isH?pos-LANE/2:-mg.top,isH?plotW+mg.left+mg.right:LANE,isH?LANE:plotH+mg.top+mg.bottom,{fill:svgColors().laneAlt});
     if(isH){aT(g,-10,pos,sys,{'text-anchor':'end','dominant-baseline':'middle','font-weight':'600','font-size':'15','fill':svgColors().label});}
-    else{aT(g,pos,-20,sys,{'text-anchor':'middle','font-weight':'600','font-size':'15','fill':svgColors().label});}
+    else{
+      var sysLines=wrapLabelLines(sys,LANE-20,"600 15px 'DM Sans',sans-serif",2);
+      aTWrapped(g,pos,-20,sysLines,{'text-anchor':'middle','font-weight':'600','font-size':'15','fill':svgColors().label});
+    }
     if(isH) aL(g,0,pos,plotW,pos,{stroke:svgColors().grid,'stroke-width':1});
     else     aL(g,pos,0,pos,plotH,{stroke:svgColors().grid,'stroke-width':1});
   });
