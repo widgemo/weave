@@ -38,6 +38,7 @@ function dsReadFieldMapping() {
 function dsMapRecordFields(rec, fm) {
   fm = fm || {};
   var id        = fm.idField        ? dsGetFieldVal(rec, fm.idField)        : '';
+  var existingIdx = id ? findEventByIdIdx(id) : -1;
   var desc      = dsGetRecordDesc(rec, fm.descField);
   var sys       = fm.sysField       ? dsGetFieldVal(rec, fm.sysField)       : '';
   var actor     = fm.actorField     ? dsGetFieldVal(rec, fm.actorField)     : '';
@@ -89,6 +90,7 @@ function dsMapRecordFields(rec, fm) {
   }
   return {
     id:                      id        || '',
+    existingIdx:             existingIdx,
     desc:                    desc,
     system:                  sys       || '',
     actor:                   actor     || '',
@@ -290,6 +292,7 @@ function dsUpdatePreview() {
              row('Integration Code', mapped.managedIntegrationCode);
   if (mapped.interactions.length) html += row('Interactions', mapped.interactions.length + ' mapped');
   if (!mapped.valid) html += '<div class="ds-preview-warn">&#9888; System is blank — this record would fail validation</div>';
+  if (mapped.existingIdx >= 0) html += '<div class="ds-preview-dup">&#8635; Already imported — Add will update it</div>';
   body.innerHTML = html;
   wrap.style.display = 'flex';
 }
@@ -308,6 +311,7 @@ function dsShowResults(records, fm) {
   var html = '<div class="ds-result-list">';
   records.forEach(function(rec, i) {
     var mapped = dsMapRecordFields(rec, fm);
+    var isDup = mapped.existingIdx >= 0;
     var cls = 'ds-result-item' + (mapped.valid ? '' : ' ds-invalid');
     html += '<div class="' + cls + '" id="dsri-' + i + '">';
     html += '<div class="ds-result-desc">' + esc(mapped.desc) + '</div>';
@@ -317,7 +321,8 @@ function dsShowResults(records, fm) {
     if (mapped.tsRaw)  html += '<span class="ds-result-ts">' + esc(mapped.tsRaw) + '</span>';
     html += '</div>';
     if (!mapped.valid) html += '<div class="ds-result-warn">&#9888; No system mapped</div>';
-    html += '<button class="btn btn-outline btn-sm ds-add-btn" id="ds-add-' + i + '" onclick="dsImportRecord(' + i + ')">+ Add</button>';
+    if (isDup) html += '<div class="ds-result-dup">&#8635; Already imported — Add will update it</div>';
+    html += '<button class="btn btn-outline btn-sm ds-add-btn" id="ds-add-' + i + '" onclick="dsImportRecord(' + i + ')">' + (isDup ? '↻ Update' : '+ Add') + '</button>';
     html += '</div>';
   });
   html += '</div>';
@@ -330,32 +335,45 @@ function dsImportRecord(idx) {
   var el  = document.getElementById('ds-results');
   var rec = (el._records || [])[idx];
   if (!rec) return;
-  dsRecordToEvent(rec, el._fm);
+  var result = dsRecordToEvent(rec, el._fm);
   var item = document.getElementById('dsri-' + idx);
   var btn  = document.getElementById('ds-add-' + idx);
   if (item) item.classList.add('ds-imported');
-  if (btn)  { btn.textContent = '✓ Added'; btn.disabled = true; }
+  if (btn)  { btn.textContent = result === 'updated' ? '✓ Updated' : '✓ Added'; btn.disabled = true; }
 }
 
 function dsImportAll() {
   var el      = document.getElementById('ds-results');
   var records = el._records || [];
   if (!records.length) return;
+  var addedCount = 0, updatedCount = 0;
   records.forEach(function(rec, i) {
-    dsRecordToEvent(rec, el._fm);
+    var result = dsRecordToEvent(rec, el._fm);
+    if (result === 'updated') updatedCount++; else addedCount++;
     var item = document.getElementById('dsri-' + i);
     var btn  = document.getElementById('ds-add-' + i);
     if (item) item.classList.add('ds-imported');
-    if (btn)  { btn.textContent = '✓ Added'; btn.disabled = true; }
+    if (btn)  { btn.textContent = result === 'updated' ? '✓ Updated' : '✓ Added'; btn.disabled = true; }
   });
   document.getElementById('ds-import-all-btn').style.display = 'none';
-  toast(records.length + ' record(s) imported', '↑');
-  appLog('info', records.length + ' record(s) imported from data source');
+  var msgParts = [];
+  if (addedCount)   msgParts.push(addedCount + ' added');
+  if (updatedCount) msgParts.push(updatedCount + ' updated');
+  var msg = msgParts.join(', ');
+  toast(msg, '↑');
+  appLog('info', msg + ' from data source');
 }
 
+// Imports one record as a diagram event, or — when its mapped ID matches an
+// event already in the diagram — updates that event in place instead of
+// creating a duplicate. Interactions are always a full replace (never a
+// concat) since mapped.interactions is already a complete recomputation of
+// "this record's interactions as of this query." Returns 'added' or
+// 'updated' so callers can give accurate feedback.
 function dsRecordToEvent(rec, fm) {
   var mapped = dsMapRecordFields(rec, fm);
   mapped.interactions.forEach(function(i) { if (i.target) knownSys.add(i.target); });
+  var isUpdate = mapped.existingIdx >= 0;
   var ev = {
     _id:                      mapped.id || ('ds-' + Date.now() + '-' + dsRandomSuffix()),
     desc:                     mapped.desc,
@@ -369,7 +387,14 @@ function dsRecordToEvent(rec, fm) {
     interactions:             mapped.interactions,
     mode:                     appMode
   };
-  events.push(ev);
+  if (isUpdate) {
+    var existing = events[mapped.existingIdx];
+    if (existing.layoutAfterId !== undefined) ev.layoutAfterId = existing.layoutAfterId;
+    events[mapped.existingIdx] = ev;
+    if (editIdx === mapped.existingIdx) editEvent(mapped.existingIdx);
+  } else {
+    events.push(ev);
+  }
   if (ev.system) {
     knownSys.add(ev.system);
     if (!systemsRegistry.find(function(s){return s.name===ev.system;}))
@@ -384,6 +409,7 @@ function dsRecordToEvent(rec, fm) {
   refreshDL();
   render();
   updateList();
+  return isUpdate ? 'updated' : 'added';
 }
 
 // ── QUERY IMPORT / EXPORT ──────────────────────────────────────────────────

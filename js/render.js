@@ -82,6 +82,83 @@ function aC(p,cx,cy,r,a){p.appendChild(sv('circle',Object.assign({cx:cx,cy:cy,r:
 function aR(p,x,y,w,h,a){p.appendChild(sv('rect',Object.assign({x:x,y:y,width:w,height:h},a)));return p;}
 function aP(p,d,a){p.appendChild(sv('path',Object.assign({d:d},a)));return p;}
 
+// ── LABEL WRAPPING (shared by render-flow.js & render-timeline.js) ──
+// Lane labels in Flow tb-mode and Timeline vertical-mode need to wrap within
+// the lane's width instead of overflowing it. No build step / no CDN JS libs
+// are allowed, so word-wrap uses a hidden canvas 2D context's measureText()
+// (a native browser API) rather than a bundled text-measurement library.
+var _measureCtx=null;
+function getMeasureCtx(){
+  if(!_measureCtx) _measureCtx=document.createElement('canvas').getContext('2d');
+  return _measureCtx;
+}
+// Greedy word-wrap into at most maxLines lines that each fit maxWidth (px).
+// A single word longer than maxWidth is hard-broken character-by-character.
+// If content still remains after maxLines lines, the last line is
+// ellipsis-truncated to fit (same '…' convention as trunc() in state.js).
+function wrapLabelLines(text,maxWidth,font,maxLines){
+  var ctx=getMeasureCtx();
+  ctx.font=font;
+  text=(text||'').trim();
+  if(!text) return [''];
+
+  // Pre-split into tokens that each individually fit maxWidth, hard-breaking
+  // any single word that doesn't (character-by-character, via binary search
+  // for the longest fitting prefix) so the main wrap loop below never has to
+  // special-case an over-wide token.
+  var tokens=[];
+  text.split(/\s+/).forEach(function(word){
+    while(word.length>1&&ctx.measureText(word).width>maxWidth){
+      var lo=1,hi=word.length,fit=1;
+      while(lo<=hi){
+        var mid=(lo+hi)>>1;
+        if(ctx.measureText(word.slice(0,mid)).width<=maxWidth){fit=mid;lo=mid+1;}
+        else hi=mid-1;
+      }
+      tokens.push(word.slice(0,fit));
+      word=word.slice(fit);
+    }
+    if(word) tokens.push(word);
+  });
+
+  var lines=[], cur='';
+  tokens.forEach(function(tok){
+    var candidate=cur?cur+' '+tok:tok;
+    if(ctx.measureText(candidate).width<=maxWidth){
+      cur=candidate;
+    }else{
+      lines.push(cur);
+      cur=tok;
+    }
+  });
+  if(cur) lines.push(cur);
+
+  if(lines.length>maxLines){
+    lines=lines.slice(0,maxLines);
+    var last=lines[maxLines-1];
+    while(last.length>0&&ctx.measureText(last+'…').width>maxWidth) last=last.slice(0,-1);
+    lines[maxLines-1]=last+'…';
+  }
+  return lines;
+}
+// Drop-in multi-line replacement for aT(): renders `lines` as tspans inside
+// one <text> element, vertically centered on the same y a single-line label
+// would have used.
+function aTWrapped(p,x,y,lines,a,lineHeight){
+  var e=sv('text',Object.assign({x:x,y:y},a));
+  if(lines.length<=1){
+    e.textContent=lines[0]||'';
+  }else{
+    lineHeight=lineHeight||(parseFloat(a['font-size'])*1.2);
+    lines.forEach(function(line,i){
+      var dy=i===0?-((lines.length-1)*lineHeight)/2:lineHeight;
+      e.appendChild(sv('tspan',{x:x,dy:dy},line));
+    });
+  }
+  p.appendChild(e);
+  return e;
+}
+
 // ── ARROW GEOMETRY HELPERS (shared by render-flow.js & render-timeline.js) ──
 // Arrows sharing the same endpoint pair (regardless of direction) are grouped
 // and spread apart perpendicular to the line so they don't overlap.
@@ -530,6 +607,14 @@ function renderTable(parent,sorted){
       return 0;
     });
   }
+
+  // Row count — always visible, independent of selection state (matches
+  // the existing Events-tab #ecount convention: a plain .hint span).
+  var infoBar=document.createElement('div');
+  infoBar.className='hint';
+  infoBar.style.cssText='padding:4px 12px 0';
+  infoBar.textContent=rows.length+' row'+(rows.length!==1?'s':'');
+  parent.appendChild(infoBar);
 
   // Selection action bar
   var selCount=0;
