@@ -83,7 +83,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           Query &amp; Import
         </button>
-        <button class="ds-menu-item" onclick="dsOpenConfig();dsCloseBannerMenu()">
+        <button class="ds-menu-item" onclick="dsOpenConfig('connection');dsCloseBannerMenu()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
           Settings
         </button>
@@ -336,147 +336,20 @@
       <!-- Login prompt (shown when not connected) -->
       <div id="ds-panel-login">
         <p class="hint" style="margin-bottom:8px">Connect a REST data source using OAuth 2.0 to query records and import them as diagram events.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-p" onclick="dsOpenConfig()">Configure</button>
-          <button class="btn btn-outline" onclick="dsInitLogin()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-            Login
-          </button>
-        </div>
+        <button class="btn btn-p" onclick="dsOpenConfig('connection')">Open Data Source Settings</button>
       </div>
 
-      <!-- Query form (shown when connected) -->
-      <div id="ds-query-form" style="display:none">
-        <div class="fg">
-          <label class="fl">Endpoint Path</label>
-          <input type="text" id="ds-endpoint" placeholder="e.g. /api/now/table/incident" autocomplete="off">
-          <span class="hint">Path from base URL</span>
+      <!-- Query + results (shown when connected; all connection/endpoint/mapping config lives in the Data Source Connection modal) -->
+      <div id="ds-panel-connected" style="display:none">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <span class="hint" id="ds-panel-summary" style="flex:1;margin:0"></span>
+          <button class="btn btn-outline btn-sm" onclick="dsOpenConfig('datasource')">Settings</button>
         </div>
-        <div class="fg">
-          <label class="fl">Method</label>
-          <select id="ds-method" onchange="dsUpdateMethodUI()">
-            <option value="get">GET</option>
-            <option value="post">POST</option>
-          </select>
-        </div>
-        <div class="fg" id="ds-query-fg">
-          <label class="fl">Query Parameters <span class="hint">(optional)</span></label>
-          <input type="text" id="ds-query" placeholder="e.g. limit=20&amp;filter=active=true" autocomplete="off">
-          <span class="hint">URL query string (key=value pairs separated by &amp;)</span>
-        </div>
-        <div class="fg" id="ds-body-fg" style="display:none">
-          <label class="fl">Request Body (JSON) <span class="hint">(optional)</span></label>
-          <textarea id="ds-body" rows="6" placeholder='e.g. {"type":"script_include","sys_id":"abc123","traverse":true,"max_depth":3}' style="font-family:'DM Mono',monospace;font-size:.78rem;resize:vertical"></textarea>
-          <span class="hint">Sent as the raw POST body with Content-Type: application/json</span>
-        </div>
-        <div class="mgrid" style="margin-top:4px">
-          <div class="fg">
-            <label class="fl">Page Size</label>
-            <input type="number" id="ds-page-size" value="20" min="1" step="1">
-          </div>
-          <div class="fg">
-            <label class="fl">Offset Param Name <span class="hint">(optional)</span></label>
-            <input type="text" id="ds-offset-param" placeholder="e.g. offset, page, sysparm_offset" autocomplete="off">
-          </div>
-        </div>
-        <span class="hint">Set an offset param name to enable Prev/Next paging below.</span>
         <div class="btn-row" style="margin-top:4px">
           <button class="btn btn-p btn-full" onclick="dsRunQuery()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Run Query
           </button>
-        </div>
-        <div class="sep"></div>
-        <div class="sh"><span class="st" style="font-size:.72rem">Field Mapping</span></div>
-        <span class="hint">Map response fields to diagram properties. Run a query to get field-name suggestions.</span>
-        <datalist id="ds-field-dl"></datalist>
-        <div id="ds-preview" class="ds-preview" style="display:none">
-          <div class="ds-preview-label">Preview (first result)</div>
-          <div id="ds-preview-body"></div>
-        </div>
-        <div class="fg" style="margin-top:4px">
-          <label class="fl">Record ID field <span class="hint">(optional)</span></label>
-          <input type="text" id="ds-id-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. sys_id" autocomplete="off">
-          <span class="hint">A stable field so other imported records can reference this one via Triggers Event, below</span>
-        </div>
-        <div class="fg" style="margin-top:4px">
-          <label class="fl">Description field</label>
-          <input type="text" id="ds-desc-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. name, title, description" autocomplete="off">
-        </div>
-        <div class="mgrid" style="margin-top:4px">
-          <div class="fg">
-            <label class="fl">System field</label>
-            <input type="text" id="ds-sys-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. category" autocomplete="off">
-          </div>
-          <div class="fg">
-            <label class="fl">Actor field</label>
-            <input type="text" id="ds-actor-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. assigned_to" autocomplete="off">
-          </div>
-        </div>
-        <div class="fg">
-          <label class="fl">Timestamp field</label>
-          <input type="text" id="ds-ts-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. created_at" autocomplete="off">
-        </div>
-        <div class="mgrid" style="margin-top:4px">
-          <div class="fg">
-            <label class="fl">Event Code field</label>
-            <input type="text" id="ds-event-code-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. event_type" autocomplete="off">
-          </div>
-          <div class="fg">
-            <label class="fl">Level field</label>
-            <input type="text" id="ds-level-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. severity" autocomplete="off">
-          </div>
-        </div>
-        <div class="fg">
-          <label class="fl">Integration Code field</label>
-          <input type="text" id="ds-integration-code-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. integration_id" autocomplete="off">
-        </div>
-        <div class="fg" style="margin-top:4px">
-          <label class="fl">Interactions field <span class="hint">(optional)</span></label>
-          <input type="text" id="ds-interactions-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. interactions" autocomplete="off">
-          <span class="hint">Field containing an array of interaction objects</span>
-        </div>
-        <div class="mgrid" style="margin-top:4px">
-          <div class="fg">
-            <label class="fl">&#x21B3; Target field</label>
-            <input type="text" id="ds-int-target-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. target" autocomplete="off">
-          </div>
-          <div class="fg">
-            <label class="fl">&#x21B3; Nature field</label>
-            <input type="text" id="ds-int-nature-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="push | pull | process" autocomplete="off">
-          </div>
-        </div>
-        <div class="mgrid" style="margin-top:4px">
-          <div class="fg">
-            <label class="fl">&#x21B3; Label field</label>
-            <input type="text" id="ds-int-label-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. label" autocomplete="off">
-          </div>
-          <div class="fg">
-            <label class="fl">&#x21B3; Delay field</label>
-            <input type="text" id="ds-int-delay-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. delay" autocomplete="off">
-          </div>
-        </div>
-        <div class="fg" style="margin-top:4px">
-          <label class="fl">&#x21B3; Order field</label>
-          <input type="text" id="ds-int-order-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. order" autocomplete="off">
-        </div>
-        <div class="fg" style="margin-top:4px">
-          <label class="fl">&#x21B3; Triggers Event field <span class="hint">(optional)</span></label>
-          <input type="text" id="ds-int-trigger-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. calls_sys_id" autocomplete="off">
-          <span class="hint">The value of another record's ID field (above) that this interaction should link to &mdash; a causal edge in Flow mode</span>
-        </div>
-        <div class="sep"></div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
-          <span class="hint" style="flex:1;margin:0">Query:</span>
-          <button class="btn btn-outline btn-sm" onclick="dsExportQuery()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="dsImportQueryClick()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Import
-          </button>
-          <input type="file" id="ds-query-file" accept=".json" style="display:none" onchange="dsImportQueryFile(event)">
         </div>
         <div class="sep"></div>
         <div class="sh">
@@ -622,56 +495,197 @@
     <button class="modal-close" onclick="dsCloseConfig()" title="Close">&#x2715;</button>
     <h2 class="about-title" style="font-size:1.15rem;margin-bottom:4px">Data Source Connection</h2>
     <p class="about-sub" style="margin-bottom:18px">OAuth 2.0 &bull; PKCE &bull; No server required</p>
-    <div class="fg" style="text-align:left">
-      <label class="fl">Display Name <span class="hint">(optional)</span></label>
-      <input type="text" id="ds-label" placeholder="e.g. My API" autocomplete="off" spellcheck="false">
-      <span class="hint">Label shown in the banner button</span>
+
+    <div class="ds-modal-tabs">
+      <button class="ds-modal-tab active" id="dsmtab-connection" onclick="dsSwitchConfigTab('connection')">Connection</button>
+      <button class="ds-modal-tab" id="dsmtab-datasource" onclick="dsSwitchConfigTab('datasource')">Data Source</button>
+      <button class="ds-modal-tab" id="dsmtab-mapping" onclick="dsSwitchConfigTab('mapping')">Field Mappings</button>
     </div>
-    <div class="fg" style="text-align:left">
-      <label class="fl">Base URL</label>
-      <input type="url" id="ds-base-url" placeholder="https://your-api-host.example.com" autocomplete="off" spellcheck="false">
-      <span class="hint">Root URL of your REST API (no trailing slash)</span>
+
+    <div class="ds-modal-tab-panel active" id="dsmpanel-connection">
+      <div class="fg" style="text-align:left">
+        <label class="fl">Display Name <span class="hint">(optional)</span></label>
+        <input type="text" id="ds-label" placeholder="e.g. My API" autocomplete="off" spellcheck="false">
+        <span class="hint">Label shown in the banner button</span>
+      </div>
+      <div class="fg" style="text-align:left">
+        <label class="fl">Base URL</label>
+        <input type="url" id="ds-base-url" placeholder="https://your-api-host.example.com" autocomplete="off" spellcheck="false">
+        <span class="hint">Root URL of your REST API (no trailing slash)</span>
+      </div>
+      <div class="fg" style="text-align:left">
+        <label class="fl">Client ID</label>
+        <input type="text" id="ds-client-id" placeholder="OAuth Application Client ID" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="fg" style="text-align:left">
+        <label class="fl">Scope <span class="hint">(optional)</span></label>
+        <input type="text" id="ds-scope" autocomplete="off">
+      </div>
+      <div class="fg" style="text-align:left">
+        <label class="fl">Auth Endpoint Path</label>
+        <input type="text" id="ds-auth-path" placeholder="/oauth_auth.do" autocomplete="off" spellcheck="false">
+        <span class="hint">Path for the OAuth authorize redirect (appended to Base URL)</span>
+      </div>
+      <div class="fg" style="text-align:left">
+        <label class="fl">Token Endpoint Path</label>
+        <input type="text" id="ds-token-path" placeholder="/oauth_token.do" autocomplete="off" spellcheck="false">
+        <span class="hint">Path for the OAuth token exchange (appended to Base URL)</span>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="dsCloseConfig()">Cancel</button>
+        <button class="btn btn-s" onclick="dsSaveConfigUI()">Save</button>
+        <button class="btn btn-p" onclick="dsSaveConfigUI();dsInitLogin()">Save &amp; Login</button>
+      </div>
+      <div class="sep" style="margin-top:14px"></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px">
+        <span class="hint" style="flex:1;margin:0">Backup / Restore:</span>
+        <button class="btn btn-outline btn-sm" onclick="dsExportConfig()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Config
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="dsImportConfigClick()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import Config
+        </button>
+        <input type="file" id="ds-config-file" accept=".json" style="display:none" onchange="dsImportConfigFile(event)">
+      </div>
+      <p class="hint" style="margin-top:14px;text-align:left">
+        <strong>Setup:</strong> Register an OAuth 2.0 client in your data source with the redirect URI set to this page&rsquo;s URL
+        (<code id="ds-redirect-uri-hint" style="word-break:break-all"></code>).
+      </p>
     </div>
-    <div class="fg" style="text-align:left">
-      <label class="fl">Client ID</label>
-      <input type="text" id="ds-client-id" placeholder="OAuth Application Client ID" autocomplete="off" spellcheck="false">
+
+    <div class="ds-modal-tab-panel" id="dsmpanel-datasource">
+      <div class="fg">
+        <label class="fl">Endpoint Path</label>
+        <input type="text" id="ds-endpoint" placeholder="e.g. /api/now/table/incident" autocomplete="off">
+        <span class="hint">Path from base URL</span>
+      </div>
+      <div class="fg">
+        <label class="fl">Method</label>
+        <select id="ds-method" onchange="dsUpdateMethodUI()">
+          <option value="get">GET</option>
+          <option value="post">POST</option>
+        </select>
+      </div>
+      <div class="fg" id="ds-query-fg">
+        <label class="fl">Query Parameters <span class="hint">(optional)</span></label>
+        <input type="text" id="ds-query" placeholder="e.g. limit=20&amp;filter=active=true" autocomplete="off">
+        <span class="hint">URL query string (key=value pairs separated by &amp;)</span>
+      </div>
+      <div class="fg" id="ds-body-fg" style="display:none">
+        <label class="fl">Request Body (JSON) <span class="hint">(optional)</span></label>
+        <textarea id="ds-body" rows="6" placeholder='e.g. {"type":"script_include","sys_id":"abc123","traverse":true,"max_depth":3}' style="font-family:'DM Mono',monospace;font-size:.78rem;resize:vertical"></textarea>
+        <span class="hint">Sent as the raw POST body with Content-Type: application/json</span>
+      </div>
+      <div class="mgrid" style="margin-top:4px">
+        <div class="fg">
+          <label class="fl">Page Size</label>
+          <input type="number" id="ds-page-size" value="20" min="1" step="1">
+        </div>
+        <div class="fg">
+          <label class="fl">Offset Param Name <span class="hint">(optional)</span></label>
+          <input type="text" id="ds-offset-param" placeholder="e.g. offset, page, sysparm_offset" autocomplete="off">
+        </div>
+      </div>
+      <span class="hint">Set an offset param name to enable Prev/Next paging in the panel.</span>
     </div>
-    <div class="fg" style="text-align:left">
-      <label class="fl">Scope <span class="hint">(optional)</span></label>
-      <input type="text" id="ds-scope" autocomplete="off">
+
+    <div class="ds-modal-tab-panel" id="dsmpanel-mapping">
+      <span class="hint">Map response fields to diagram properties. Run a query to get field-name suggestions.</span>
+      <datalist id="ds-field-dl"></datalist>
+      <div id="ds-preview" class="ds-preview" style="display:none">
+        <div class="ds-preview-label">Preview (first result)</div>
+        <div id="ds-preview-body"></div>
+      </div>
+      <div class="fg" style="margin-top:4px">
+        <label class="fl">Record ID field <span class="hint">(optional)</span></label>
+        <input type="text" id="ds-id-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. sys_id" autocomplete="off">
+        <span class="hint">A stable field so other imported records can reference this one via Triggers Event, below</span>
+      </div>
+      <div class="fg" style="margin-top:4px">
+        <label class="fl">Description field</label>
+        <input type="text" id="ds-desc-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. name, title, description" autocomplete="off">
+      </div>
+      <div class="mgrid" style="margin-top:4px">
+        <div class="fg">
+          <label class="fl">System field</label>
+          <input type="text" id="ds-sys-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. category" autocomplete="off">
+        </div>
+        <div class="fg">
+          <label class="fl">Actor field</label>
+          <input type="text" id="ds-actor-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. assigned_to" autocomplete="off">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Timestamp field</label>
+        <input type="text" id="ds-ts-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. created_at" autocomplete="off">
+      </div>
+      <div class="mgrid" style="margin-top:4px">
+        <div class="fg">
+          <label class="fl">Event Code field</label>
+          <input type="text" id="ds-event-code-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. event_type" autocomplete="off">
+        </div>
+        <div class="fg">
+          <label class="fl">Level field</label>
+          <input type="text" id="ds-level-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. severity" autocomplete="off">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Integration Code field</label>
+        <input type="text" id="ds-integration-code-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. integration_id" autocomplete="off">
+      </div>
+      <div class="fg" style="margin-top:4px">
+        <label class="fl">Interactions field <span class="hint">(optional)</span></label>
+        <input type="text" id="ds-interactions-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. interactions" autocomplete="off">
+        <span class="hint">Field containing an array of interaction objects</span>
+      </div>
+      <div class="mgrid" style="margin-top:4px">
+        <div class="fg">
+          <label class="fl">&#x21B3; Target field</label>
+          <input type="text" id="ds-int-target-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. target" autocomplete="off">
+        </div>
+        <div class="fg">
+          <label class="fl">&#x21B3; Nature field</label>
+          <input type="text" id="ds-int-nature-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="push | pull | process" autocomplete="off">
+        </div>
+      </div>
+      <div class="mgrid" style="margin-top:4px">
+        <div class="fg">
+          <label class="fl">&#x21B3; Label field</label>
+          <input type="text" id="ds-int-label-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. label" autocomplete="off">
+        </div>
+        <div class="fg">
+          <label class="fl">&#x21B3; Delay field</label>
+          <input type="text" id="ds-int-delay-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. delay" autocomplete="off">
+        </div>
+      </div>
+      <div class="fg" style="margin-top:4px">
+        <label class="fl">&#x21B3; Order field</label>
+        <input type="text" id="ds-int-order-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. order" autocomplete="off">
+      </div>
+      <div class="fg" style="margin-top:4px">
+        <label class="fl">&#x21B3; Triggers Event field <span class="hint">(optional)</span></label>
+        <input type="text" id="ds-int-trigger-field" list="ds-field-dl" oninput="dsUpdatePreview()" placeholder="e.g. calls_sys_id" autocomplete="off">
+        <span class="hint">The value of another record's ID field (above) that this interaction should link to &mdash; a causal edge in Flow mode</span>
+      </div>
     </div>
-    <div class="fg" style="text-align:left">
-      <label class="fl">Auth Endpoint Path</label>
-      <input type="text" id="ds-auth-path" placeholder="/oauth_auth.do" autocomplete="off" spellcheck="false">
-      <span class="hint">Path for the OAuth authorize redirect (appended to Base URL)</span>
+
+    <div id="ds-modal-query-footer" style="display:none">
+      <div class="sep" style="margin:14px 0 10px"></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="hint" style="flex:1;margin:0">Query:</span>
+        <button class="btn btn-outline btn-sm" onclick="dsExportQuery()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="dsImportQueryClick()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import
+        </button>
+        <input type="file" id="ds-query-file" accept=".json" style="display:none" onchange="dsImportQueryFile(event)">
+      </div>
     </div>
-    <div class="fg" style="text-align:left">
-      <label class="fl">Token Endpoint Path</label>
-      <input type="text" id="ds-token-path" placeholder="/oauth_token.do" autocomplete="off" spellcheck="false">
-      <span class="hint">Path for the OAuth token exchange (appended to Base URL)</span>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
-      <button class="btn btn-outline" onclick="dsCloseConfig()">Cancel</button>
-      <button class="btn btn-s" onclick="dsSaveConfigUI()">Save</button>
-      <button class="btn btn-p" onclick="dsSaveConfigUI();dsInitLogin()">Save &amp; Login</button>
-    </div>
-    <div class="sep" style="margin-top:14px"></div>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px">
-      <span class="hint" style="flex:1;margin:0">Backup / Restore:</span>
-      <button class="btn btn-outline btn-sm" onclick="dsExportConfig()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export Config
-      </button>
-      <button class="btn btn-outline btn-sm" onclick="dsImportConfigClick()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Import Config
-      </button>
-      <input type="file" id="ds-config-file" accept=".json" style="display:none" onchange="dsImportConfigFile(event)">
-    </div>
-    <p class="hint" style="margin-top:14px;text-align:left">
-      <strong>Setup:</strong> Register an OAuth 2.0 client in your data source with the redirect URI set to this page&rsquo;s URL
-      (<code id="ds-redirect-uri-hint" style="word-break:break-all"></code>).
-    </p>
   </div>
 </div>
 

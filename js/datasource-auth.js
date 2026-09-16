@@ -342,7 +342,7 @@ function dsCloseBannerMenu() {
 }
 
 // ── CONFIG MODAL ───────────────────────────────────────────────────────────
-function dsOpenConfig() {
+function dsOpenConfig(tab) {
   var cfg = dsLoadConfig();
   document.getElementById('ds-base-url').value    = cfg.baseUrl    || '';
   document.getElementById('ds-client-id').value   = cfg.clientId   || '';
@@ -353,10 +353,23 @@ function dsOpenConfig() {
   var hint = document.getElementById('ds-redirect-uri-hint');
   if (hint) hint.textContent = window.location.href.split('?')[0].split('#')[0];
   //if (hint) hint.textContent = 'https://mark-enet.github.io/weave/';
+  dsSwitchConfigTab(tab || 'connection');
   document.getElementById('ds-config-modal').classList.add('open');
 }
 function dsCloseConfig() {
   document.getElementById('ds-config-modal').classList.remove('open');
+}
+// Switches the tab shown inside the Data Source Connection modal (Connection /
+// Data Source / Field Mappings) and shows the shared query-export/import
+// footer only on the latter two tabs (the Connection tab has its own,
+// separate Export/Import Config actions for the connection-only JSON).
+function dsSwitchConfigTab(tab) {
+  ['connection', 'datasource', 'mapping'].forEach(function(t) {
+    document.getElementById('dsmtab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('dsmpanel-' + t).classList.toggle('active', t === tab);
+  });
+  var footer = document.getElementById('ds-modal-query-footer');
+  if (footer) footer.style.display = (tab === 'datasource' || tab === 'mapping') ? '' : 'none';
 }
 function dsSaveConfigUI() {
   var baseUrl   = document.getElementById('ds-base-url').value.trim();
@@ -383,23 +396,26 @@ function dsSaveConfigUI() {
 // ── PANEL STATUS ───────────────────────────────────────────────────────────
 function dsUpdatePanelStatus() {
   var statusEl  = document.getElementById('ds-panel-status');
-  var formEl    = document.getElementById('ds-query-form');
+  var connEl    = document.getElementById('ds-panel-connected');
   var loginEl   = document.getElementById('ds-panel-login');
+  var summaryEl = document.getElementById('ds-panel-summary');
   if (!statusEl) return;
 
   var loggedIn = dsIsLoggedIn();
   var cfg      = dsLoadConfig();
 
   if (loggedIn) {
-    var instanceLabel = cfg.baseUrl || '';
-    statusEl.innerHTML =
-      '<span class="ds-dot connected"></span>' +
-      '<span class="ds-status-text">Connected to <strong>' + esc(instanceLabel) + '</strong></span>';
-    if (formEl)  formEl.style.display  = '';
+    statusEl.innerHTML = '<span class="ds-dot connected"></span><span class="ds-status-text">Connected</span>';
+    if (connEl)  connEl.style.display  = '';
     if (loginEl) loginEl.style.display = 'none';
+    if (summaryEl) {
+      var q = dsReadQueryForm();
+      summaryEl.textContent = (cfg.baseUrl || '(no base URL)') + ' · ' +
+        (q.method || 'get').toUpperCase() + ' ' + (q.endpoint || '(no endpoint set)');
+    }
   } else {
     statusEl.innerHTML = '<span class="ds-dot"></span><span class="ds-status-text">Not connected</span>';
-    if (formEl)  formEl.style.display  = 'none';
+    if (connEl)  connEl.style.display  = 'none';
     if (loginEl) loginEl.style.display = '';
   }
 }
