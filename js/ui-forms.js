@@ -306,7 +306,7 @@ function _resetToNewDiagram(){
   clearForm();
   clearFilters();
   refreshDL(); refreshActorDL(); refreshLevelDL();
-  refreshSysOrderUI(); refreshSystemsUI();
+  refreshSystemsUI();
   refreshFilterBar(); render(); updateList();
 
   try{

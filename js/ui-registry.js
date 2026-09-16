@@ -1,45 +1,5 @@
 // ── UI: SYSTEMS & ACTORS REGISTRY ───────────────────────
 
-// SYSTEM ORDER UI
-function refreshSysOrderUI(){
-  var container=document.getElementById('sys-order-list');
-  if(!container) return;
-  // Collect all known systems from events
-  var sySet=new Set();
-  events.forEach(function(e){
-    if(e.system) sySet.add(e.system);
-    (e.interactions||[]).forEach(function(i){if(i.target) sySet.add(i.target);});
-  });
-  [...knownSys].forEach(function(s){sySet.add(s);});
-  var arr=[...sySet].sort();
-  container.innerHTML='';
-  if(!arr.length){
-    container.innerHTML='<span class="hint">No systems yet — add events first.</span>';
-    return;
-  }
-  arr.forEach(function(sys){
-    var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px';
-    var lbl=document.createElement('span');
-    lbl.style.cssText='flex:1;font-size:.83rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-    lbl.textContent=sys;
-    var inp=document.createElement('input');
-    inp.type='number'; inp.min='1'; inp.step='1';
-    inp.style.cssText='width:64px;flex-shrink:0;padding:5px 8px;font-size:.8rem';
-    inp.placeholder='#';
-    if(sysOrder[sys]!==undefined) inp.value=sysOrder[sys];
-    inp.addEventListener('change',function(){
-      var v=inp.value.trim();
-      if(v==='') delete sysOrder[sys];
-      else sysOrder[sys]=parseInt(v)||0;
-      render();
-    });
-    row.appendChild(lbl); row.appendChild(inp);
-    container.appendChild(row);
-  });
-}
-
-
 // SYSTEMS & ACTORS REGISTRY
 
 function refreshSystemsUI(){
@@ -51,16 +11,41 @@ function renderSystemsList(){
   var el=document.getElementById('systems-list'); if(!el) return;
   var allSys=new Set([...knownSys]);
   systemsRegistry.forEach(function(s){allSys.add(s.name);});
-  var arr=[...allSys].sort();
+  // Sort by actual current lane order (same logic as getSysArray in state.js)
+  // so the list is a WYSIWYG, draggable representation of lane order rather
+  // than an unrelated alphabetical listing.
+  var arr=[...allSys].sort(function(a,b){
+    var oa=sysOrder[a]!==undefined?sysOrder[a]:9999;
+    var ob=sysOrder[b]!==undefined?sysOrder[b]:9999;
+    if(oa!==ob) return oa-ob;
+    return a<b?-1:a>b?1:0;
+  });
   if(!arr.length){el.innerHTML='<span class="hint">No systems yet.</span>';return;}
   el.innerHTML='';
-  arr.forEach(function(name){
+  arr.forEach(function(name,ri){
     var reg=systemsRegistry.find(function(s){return s.name===name;})||{name:name,desc:'',order:undefined};
     var row=document.createElement('div');
-    row.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:6px';
+    row.className='reg-row';
+    row.draggable=true;
+    row.dataset.ri=ri;
+    row.addEventListener('dragstart',function(ev){ev.dataTransfer.setData('text/plain',String(ri));row.classList.add('dragging');});
+    row.addEventListener('dragend',function(){row.classList.remove('dragging');});
+    row.addEventListener('dragover',function(ev){ev.preventDefault();row.classList.add('drag-over');});
+    row.addEventListener('dragleave',function(){row.classList.remove('drag-over');});
+    row.addEventListener('drop',function(ev){
+      ev.preventDefault();row.classList.remove('drag-over');
+      var fromIdx=parseInt(ev.dataTransfer.getData('text/plain'));
+      var toIdx=parseInt(row.dataset.ri);
+      if(fromIdx===toIdx||isNaN(fromIdx)||isNaN(toIdx)) return;
+      var moved=arr.splice(fromIdx,1)[0];
+      arr.splice(toIdx,0,moved);
+      reindexSystemsFromOrder(arr);
+    });
     // Header row
     var hdr=document.createElement('div');
     hdr.style.cssText='display:flex;align-items:center;gap:6px';
+    var handle=document.createElement('span');
+    handle.className='drag-handle'; handle.title='Drag to reorder'; handle.textContent='☰';
     var nameInp=document.createElement('input');
     nameInp.type='text'; nameInp.value=name; nameInp.placeholder='System name';
     nameInp.style.cssText='flex:1;font-size:.83rem;font-weight:600;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none';
@@ -75,7 +60,7 @@ function renderSystemsList(){
     delBtn.className='btn btn-d'; delBtn.style.cssText='padding:3px 8px;font-size:.7rem';
     delBtn.textContent='✕';
     delBtn.addEventListener('click',function(){deleteSystem(name);});
-    hdr.appendChild(nameInp); hdr.appendChild(orderInp); hdr.appendChild(delBtn);
+    hdr.appendChild(handle); hdr.appendChild(nameInp); hdr.appendChild(orderInp); hdr.appendChild(delBtn);
     // Desc input
     var descInp=document.createElement('input');
     descInp.type='text'; descInp.placeholder='Description (optional)';
@@ -93,15 +78,39 @@ function renderActorsList(){
   el.innerHTML='';
   actorsRegistry.forEach(function(a,i){
     var row=document.createElement('div');
-    row.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:6px';
-    row.innerHTML=
-      '<div style="display:flex;align-items:center;gap:6px">'+
-        '<input type="text" style="flex:1;font-size:.83rem;font-weight:600;padding:4px 8px" '+
-          'value="'+esc(a.name)+'" placeholder="Actor name" onchange="renameActor('+i+',this.value)">'+
-        '<button class="btn btn-d" style="padding:3px 8px;font-size:.7rem" onclick="deleteActor('+i+')">&#x2715;</button>'+
-      '</div>'+
-      '<input type="text" placeholder="Description (optional)" style="font-size:.78rem;padding:5px 8px" '+
-        'value="'+esc(a.desc||'')+'" onchange="setActorDesc('+i+',this.value)">';
+    row.className='reg-row';
+    row.draggable=true;
+    row.dataset.ri=i;
+    row.addEventListener('dragstart',function(ev){ev.dataTransfer.setData('text/plain',String(i));row.classList.add('dragging');});
+    row.addEventListener('dragend',function(){row.classList.remove('dragging');});
+    row.addEventListener('dragover',function(ev){ev.preventDefault();row.classList.add('drag-over');});
+    row.addEventListener('dragleave',function(){row.classList.remove('drag-over');});
+    row.addEventListener('drop',function(ev){
+      ev.preventDefault();row.classList.remove('drag-over');
+      var fromIdx=parseInt(ev.dataTransfer.getData('text/plain'));
+      var toIdx=parseInt(row.dataset.ri);
+      if(fromIdx===toIdx||isNaN(fromIdx)||isNaN(toIdx)) return;
+      reindexActors(fromIdx,toIdx);
+    });
+    var hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;gap:6px';
+    var handle=document.createElement('span');
+    handle.className='drag-handle'; handle.title='Drag to reorder'; handle.textContent='☰';
+    var nameInp=document.createElement('input');
+    nameInp.type='text'; nameInp.value=a.name; nameInp.placeholder='Actor name';
+    nameInp.style.cssText='flex:1;font-size:.83rem;font-weight:600;padding:4px 8px';
+    nameInp.addEventListener('change',function(){renameActor(i,nameInp.value);});
+    var delBtn=document.createElement('button');
+    delBtn.className='btn btn-d'; delBtn.style.cssText='padding:3px 8px;font-size:.7rem';
+    delBtn.textContent='✕';
+    delBtn.addEventListener('click',function(){deleteActor(i);});
+    hdr.appendChild(handle); hdr.appendChild(nameInp); hdr.appendChild(delBtn);
+    var descInp=document.createElement('input');
+    descInp.type='text'; descInp.placeholder='Description (optional)';
+    descInp.style.cssText='font-size:.78rem;padding:5px 8px';
+    descInp.value=a.desc||'';
+    descInp.addEventListener('change',function(){setActorDesc(i,descInp.value);});
+    row.appendChild(hdr); row.appendChild(descInp);
     el.appendChild(row);
   });
 }
@@ -157,6 +166,29 @@ function setSysOrder(name,val){
   reg.order=val.trim()===''?undefined:parseInt(val)||0;
   sysOrder[name]=reg.order!==undefined?reg.order:9999;
   render();
+  renderSystemsList();
+}
+// Applies a new drag-and-drop lane order: assigns sequential order values
+// (0,1,2,...) to systemsRegistry[].order/sysOrder{} in the given order,
+// auto-creating a registry entry for any system seen only via events.
+function reindexSystemsFromOrder(orderedNames){
+  orderedNames.forEach(function(name,i){
+    var reg=systemsRegistry.find(function(s){return s.name===name;});
+    if(!reg){reg={name:name,desc:''};systemsRegistry.push(reg);}
+    reg.order=i;
+    sysOrder[name]=i;
+  });
+  render();
+  renderSystemsList();
+}
+// Applies a drag-and-drop reorder of the Actors registry list itself —
+// actors have no lane concept, so this only reorders actorsRegistry[]
+// (no separate order field needed).
+function reindexActors(fromIdx,toIdx){
+  var moved=actorsRegistry.splice(fromIdx,1)[0];
+  actorsRegistry.splice(toIdx,0,moved);
+  render();
+  renderActorsList();
 }
 function setSysDesc(name,val){
   var reg=systemsRegistry.find(function(s){return s.name===name;});
@@ -248,7 +280,7 @@ function _doRenameSystem(oldName,newName,isMerge){
   }
   knownSys.delete(oldName); knownSys.add(newName);
   _refreshOpenInspectorAfterRename(oldName,newName,false);
-  refreshDL(); refreshSysOrderUI(); renderSystemsList(); refreshFilterBar();
+  refreshDL(); renderSystemsList(); refreshFilterBar();
   render(); updateList();
   _renameToast(oldName,newName,touched,isMerge);
 }

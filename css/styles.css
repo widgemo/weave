@@ -170,7 +170,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .fg{display:flex;flex-direction:column;gap:5px}
 .fl{font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;text-transform:uppercase;
   letter-spacing:.08em;color:var(--text3)}
-input[type=text],input[type=number],input[type=datetime-local],select,textarea{
+input[type=text],input[type=url],input[type=number],input[type=datetime-local],select,textarea{
   width:100%;padding:8px 11px;background:var(--input-bg);border:1px solid var(--input-border);
   border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.875rem;
   outline:none;transition:border-color .2s,box-shadow .2s,background .25s}
@@ -400,6 +400,10 @@ html.dark .log-badge-error{background:#e05555}
 /* ── DRAG AND DROP ───────────────────────────────────── */
 .eitem.dragging{opacity:.4}
 .eitem.drag-over{border-color:var(--accent);background:rgba(232,96,74,.1)}
+.reg-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:9px 10px;display:flex;flex-direction:column;gap:6px}
+.reg-row.dragging{opacity:.4}
+.reg-row.drag-over{border-color:var(--accent);background:rgba(232,96,74,.1)}
 .drag-handle{cursor:grab;margin-right:6px;color:var(--text3);font-size:.85rem;user-select:none}
 .drag-handle:active{cursor:grabbing}
 

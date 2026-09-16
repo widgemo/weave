@@ -98,8 +98,12 @@ function renderFlow(parent,direction,showSeq,filteredEvents){
   sysArr.forEach(function(sys,i){
     var lp=isLR?i*LG:i*SG, ls=isLR?LG:SG;
     if(i%2===0) aR(g,isLR?-mg.left:lp-10,isLR?lp-10:-mg.top,isLR?pW+mg.left+mg.right:ls+20,isLR?ls+20:pH+mg.top+mg.bottom,{fill:svgColors().laneAlt});
-    if(isLR) aT(g,-10,lp+BH/2+20,sys,{'text-anchor':'end','dominant-baseline':'middle','font-weight':'600','font-size':'12','fill':svgColors().label});
-    else     aT(g,lp+BW/2+10,-20,sys,{'text-anchor':'middle','font-weight':'600','font-size':'12','fill':svgColors().label});
+    if(isLR){
+      aT(g,-10,lp+BH/2+20,sys,{'text-anchor':'end','dominant-baseline':'middle','font-weight':'600','font-size':'12','fill':svgColors().label});
+    }else{
+      var sysLines=wrapLabelLines(sys,SG-20,"600 12px 'DM Sans',sans-serif",2);
+      aTWrapped(g,lp+BW/2+10,-20,sysLines,{'text-anchor':'middle','font-weight':'600','font-size':'12','fill':svgColors().label});
+    }
   });
 
   // ── Arrow grouping ──

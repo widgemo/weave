@@ -99,7 +99,6 @@ function switchAppMode(m){
 }
 
 function switchTab(tab){
-  if(tab==='scenario') setTimeout(refreshSysOrderUI,50);
   if(tab==='systems') setTimeout(refreshSystemsUI,50);
   if(tab==='datasource') setTimeout(dsUpdatePanelStatus,50);
   ['add','events','scenario','systems','datasource'].forEach(function(t){
