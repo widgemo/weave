@@ -283,15 +283,14 @@ function clearAll(){
   },'Delete All','Delete All Events');
 }
 
-// NEW DIAGRAM — resets diagram data and settings, keeps data source/query config
-var DIAGRAM_SETTING_KEYS=['weave-vslider','weave-hslider','weave-timeline-reverse',
-  'weave-date-format','weave-time-format','weave-table-col-widths'];
-
+// NEW DIAGRAM — resets diagram data only; mode/view settings (app mode,
+// orientation, flow direction, zoom/sliders, display toggles, table sort)
+// and data source/query config are left exactly as they were.
 function newDiagram(){
   showConfirm(
-    'Start a new diagram? All events, systems, actors and diagram settings will be permanently deleted, '+
+    'Start a new diagram? All events, systems, and actors will be permanently deleted, '+
     'including the copy saved in this browser. Export your work first if you want to keep it. '+
-    'Data source and query settings are not affected.',
+    'Your view settings (mode, orientation, display options) and data source/query settings are not affected.',
     _resetToNewDiagram,'Delete & Start New','New Diagram');
 }
 
@@ -301,34 +300,24 @@ function _resetToNewDiagram(){
   scenName=''; scenDesc='';
   editIdx=-1; selectedEventId=null; tableSelection.clear();
 
-  diagramZoom=1.0; diagramVSlider=1.0; diagramHSlider=1.0;
-  timelineCompact=true; timelineReverse=false;
-  displayConfig.showLevel=true; displayConfig.showEventCode=true;
-  displayConfig.showManagedIntegrationCode=true; displayConfig.showActor=true;
-  displayConfig.showDate=true; displayConfig.showSeq=true;
-  displayConfig.dateFormat='YYYY-MM-DD'; displayConfig.timeFormat='HH:mm:ss';
-  tableSortCol=null; tableSortDir='asc';
-
-  try{
-    localStorage.removeItem(WEAVE_APP_STATE_KEY);
-    DIAGRAM_SETTING_KEYS.forEach(function(k){localStorage.removeItem(k);});
-  }catch(e){}
-
   function setVal(id,val){var el=document.getElementById(id); if(el) el.value=val;}
-  function setChk(id,val){var el=document.getElementById(id); if(el) el.checked=val;}
   setVal('scenario-name',''); setVal('scenario-desc','');
-  setVal('orientation','vertical'); setVal('flow-dir','lr');
-  setVal('dc-date-format','YYYY-MM-DD'); setVal('dc-time-format','HH:mm:ss');
-  setChk('dc-level',true); setChk('dc-event-code',true); setChk('dc-managed-integration-code',true);
-  setChk('dc-actor',true); setChk('dc-show-date',true); setChk('dc-show-seq',true);
 
   clearForm();
   clearFilters();
-  initDiagSliders();
-  applyTimelineReverseState();
-  switchAppMode('timeline');
   refreshDL(); refreshActorDL(); refreshLevelDL();
   refreshSysOrderUI(); refreshSystemsUI();
   refreshFilterBar(); render(); updateList();
+
+  try{
+    localStorage.removeItem(WEAVE_APP_STATE_KEY);
+    // Immediate (non-debounced) save so the emptied diagram is persisted
+    // together with the surviving mode/orientation/flow-direction/
+    // displayConfig in one write — otherwise a reload inside
+    // persistAppState()'s 400ms debounce window would fall back to
+    // hardcoded defaults for those settings instead of keeping them.
+    _doPersistAppState();
+  }catch(e){}
+
   toast('New diagram started','✨');
 }
