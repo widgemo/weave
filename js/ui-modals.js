@@ -84,6 +84,15 @@ function closeShortcutsHelp(){
 }
 
 
+// DIAGRAM SETTINGS MODAL
+function openDiagramSettings(){
+  document.getElementById('diagram-settings-modal').classList.add('open');
+}
+function closeDiagramSettings(){
+  document.getElementById('diagram-settings-modal').classList.remove('open');
+}
+
+
 // CONFIRM MODAL
 var _confirmCb=null;
 function showConfirm(msg,onOk,okLabel,title){
