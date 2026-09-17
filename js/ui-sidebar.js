@@ -101,7 +101,7 @@ function switchAppMode(m){
 function switchTab(tab){
   if(tab==='systems') setTimeout(refreshSystemsUI,50);
   if(tab==='datasource') setTimeout(dsUpdatePanelStatus,50);
-  ['add','events','scenario','systems','datasource'].forEach(function(t){
+  ['add','events','systems','datasource'].forEach(function(t){
     document.getElementById('stab-'+t).classList.toggle('active',t===tab);
     document.getElementById('panel-'+t).classList.toggle('active',t===tab);
   });
@@ -264,6 +264,15 @@ document.addEventListener('DOMContentLoaded',function(){
   });
   document.getElementById('export-name-modal').addEventListener('click',function(e){
     if(e.target===this) closeExportNameModal();
+  });
+  document.getElementById('ds-config-modal').addEventListener('click',function(e){
+    if(e.target===this) dsCloseConfig();
+  });
+  document.getElementById('log-modal').addEventListener('click',function(e){
+    if(e.target===this) closeLogViewer();
+  });
+  document.getElementById('diagram-settings-modal').addEventListener('click',function(e){
+    if(e.target===this) closeDiagramSettings();
   });
   // Close file menu when clicking outside
   document.addEventListener('click',function(e){

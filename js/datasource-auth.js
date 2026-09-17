@@ -410,8 +410,10 @@ function dsUpdatePanelStatus() {
     if (loginEl) loginEl.style.display = 'none';
     if (summaryEl) {
       var q = dsReadQueryForm();
-      summaryEl.textContent = (cfg.baseUrl || '(no base URL)') + ' · ' +
+      var name = cfg.label || cfg.baseUrl || '(no base URL)';
+      summaryEl.textContent = name + ' · ' +
         (q.method || 'get').toUpperCase() + ' ' + (q.endpoint || '(no endpoint set)');
+      summaryEl.title = summaryEl.textContent;
     }
   } else {
     statusEl.innerHTML = '<span class="ds-dot"></span><span class="ds-status-text">Not connected</span>';
