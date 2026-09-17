@@ -67,12 +67,19 @@ in `js/import-export.js`.
   (`/oauth_auth.do`, `/oauth_token.do`) follow ServiceNow's OAuth endpoint
   convention, but the client itself is instance-agnostic — any OAuth 2.0 + PKCE
   REST API can be configured.
-- **Query & mapping** (`js/datasource-query.js`): the query form (endpoint path +
-  query string), the results list, and `dsRecordToEvent()` which maps configurable
-  response fields (description, system, actor, timestamp, event/integration code,
-  level, and an optional interactions array) onto a diagram event. Query form state
-  persists to `localStorage` (`weave-ds-query`) and can be exported/imported as a
-  standalone JSON file, independent of the diagram JSON export.
+- **Query & mapping** (`js/datasource-query.js`): the query form (endpoint path,
+  method, query string/body, pagination) and the field-mapping form live in the
+  **Data Source Connection modal**'s "Data Source" and "Field Mappings" tabs
+  respectively (`dsOpenConfig(tab)`/`dsSwitchConfigTab(tab)` in
+  `js/datasource-auth.js`) — the sidebar Data panel itself only shows a compact
+  connection summary, the Run Query button, and the results list, keeping
+  configuration and query-running visually separate. `dsRecordToEvent()` maps
+  configurable response fields (description, system, actor, timestamp,
+  event/integration code, level, and an optional interactions array) onto a
+  diagram event. Query form + field-mapping state persists together to
+  `localStorage` (`weave-ds-query`) and can be exported/imported as a standalone
+  JSON file via the modal's shared footer (visible on the Data Source/Field
+  Mappings tabs), independent of the diagram JSON export.
 - Both files are loaded after `js/ui-modals.js` (for `promptExportFilename`) and
   before the inline `dsInit()` call at the end of `index.html`.
 - **Stable IDs and causal (Triggers Event) chains**: the field-mapping form has an
