@@ -25,6 +25,7 @@
   --accent2: #3cbfbf;
   --warn: #f5a623;
   --danger: #c0392b;
+  --success: #2ecc71;
   --text: #3d2b1a;
   --text2: #7a5c3a;
   --text3: #b08050;
@@ -67,6 +68,7 @@ html.dark {
   --accent2: #45d0d0;
   --warn: #f5a623;
   --danger: #e05555;
+  --success: #3ddc84;
   --text: #ccc8e8;
   --text2: #a8a0cc;
   --text3: #7870aa;
@@ -353,10 +355,12 @@ html.dark .elevel-debug{background:rgba(136,153,200,.12);color:#99aacc}
 
 /* ── LOGS NAV BUTTON / BADGE ─────────────────────────── */
 .log-nav-btn{position:relative}
-.log-badge{position:absolute;top:-4px;right:-6px;background:#c0392b;color:#fff;
+.log-badge{position:absolute;top:-4px;right:-6px;background:var(--success);color:#fff;
   border-radius:10px;font-size:.6rem;font-family:'DM Mono',monospace;font-weight:700;
   min-width:16px;height:16px;padding:0 4px;display:inline-flex;align-items:center;
   justify-content:center;pointer-events:none}
+.log-badge.log-badge-warn{background:var(--warn)}
+.log-badge.log-badge-danger{background:var(--danger)}
 
 /* ── LOG VIEWER MODAL ────────────────────────────────── */
 .log-modal-overlay{align-items:flex-start;padding-top:60px}
@@ -521,9 +525,19 @@ html.dark .log-badge-error{background:#e05555}
 .ds-menu-divider{height:1px;background:var(--nav-div);margin:3px 8px}
 
 /* Config modal */
-.ds-config-card{max-width:440px;text-align:left}
+.ds-config-card{max-width:560px;width:94%;text-align:left;max-height:85vh;overflow-y:auto}
 .ds-config-card .about-title{text-align:left}
 .ds-config-card .about-sub{text-align:left}
+
+/* Config modal tabs */
+.ds-modal-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.ds-modal-tab{flex:1;padding:8px 4px;font-family:'Nunito',sans-serif;font-size:.74rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.03em;color:var(--text3);background:transparent;border:none;
+  border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s}
+.ds-modal-tab:hover{color:var(--text2)}
+.ds-modal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.ds-modal-tab-panel{display:none}
+.ds-modal-tab-panel.active{display:block}
 
 /* Panel */
 .ds-panel-header{display:flex;align-items:center;justify-content:space-between;

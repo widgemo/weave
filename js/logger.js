@@ -4,6 +4,7 @@
 
 var appLogEntries = [];
 var _logBadgeCount = 0;
+var _logBadgeSeverity = 0; // 0=info, 1=warning, 2=error — highest level among unread entries
 
 // Add a log entry and update the UI badge.
 // level: 'info' | 'warning' | 'error'
@@ -13,6 +14,8 @@ function appLog(level, msg, detail) {
   var entry = { ts: new Date(), level: level, msg: msg || '', detail: detail || '' };
   appLogEntries.push(entry);
   _logBadgeCount++;
+  if (level === 'error') _logBadgeSeverity = 2;
+  else if (level === 'warning' && _logBadgeSeverity < 1) _logBadgeSeverity = 1;
   _logUpdateBadge();
   if (level === 'error') {
     showErrorBanner(msg);
@@ -25,8 +28,12 @@ function _logUpdateBadge() {
   if (_logBadgeCount > 0) {
     badge.textContent = _logBadgeCount > 99 ? '99+' : String(_logBadgeCount);
     badge.style.display = 'inline-flex';
+    badge.classList.toggle('log-badge-ok', _logBadgeSeverity === 0);
+    badge.classList.toggle('log-badge-warn', _logBadgeSeverity === 1);
+    badge.classList.toggle('log-badge-danger', _logBadgeSeverity === 2);
   } else {
     badge.style.display = 'none';
+    badge.classList.remove('log-badge-ok', 'log-badge-warn', 'log-badge-danger');
   }
 }
 
@@ -55,6 +62,7 @@ function dismissErrorBanner() {
 
 function openLogViewer() {
   _logBadgeCount = 0;
+  _logBadgeSeverity = 0;
   _logUpdateBadge();
   _renderLogViewer();
   document.getElementById('log-modal').classList.add('open');
@@ -67,6 +75,7 @@ function closeLogViewer() {
 function clearAppLog() {
   appLogEntries = [];
   _logBadgeCount = 0;
+  _logBadgeSeverity = 0;
   _logUpdateBadge();
   _renderLogViewer();
 }
