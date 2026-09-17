@@ -79,13 +79,9 @@
         </svg>Data Source
       </button>
       <div class="ds-menu" id="ds-menu" style="display:none">
-        <button class="ds-menu-item" onclick="switchTab('datasource');dsCloseBannerMenu()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Query &amp; Import
-        </button>
         <button class="ds-menu-item" onclick="dsOpenConfig('connection');dsCloseBannerMenu()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-          Settings
+          Connection Settings
         </button>
         <div class="ds-menu-divider"></div>
         <button class="ds-menu-item ds-menu-danger" onclick="dsLogout()">
@@ -140,9 +136,8 @@
     <div class="sidebar-tabs">
       <button class="sidebar-tab active" id="stab-add" onclick="switchTab('add')">Inspector</button>
       <button class="sidebar-tab" id="stab-events" onclick="switchTab('events')">Events</button>
-      <button class="sidebar-tab" id="stab-scenario" onclick="switchTab('scenario')">Diagram</button>
       <button class="sidebar-tab" id="stab-systems" onclick="switchTab('systems')">Registry</button>
-      <button class="sidebar-tab" id="stab-datasource" onclick="switchTab('datasource')">Data</button>
+      <button class="sidebar-tab" id="stab-datasource" onclick="switchTab('datasource')">Sources</button>
     </div>
 
     <div class="sidebar-panel active" id="panel-add">
@@ -268,62 +263,6 @@
       <div id="actors-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
     </div>
 
-    <div class="sidebar-panel" id="panel-scenario">
-      <div class="fg">
-        <label class="fl">Scenario Name</label>
-        <input type="text" id="scenario-name" placeholder="Name this scenario…">
-      </div>
-      <div class="fg">
-        <label class="fl">Notes</label>
-        <textarea id="scenario-desc" rows="3" placeholder="Optional notes…" style="resize:vertical"></textarea>
-      </div>
-      <button class="btn btn-p" onclick="saveScenario()">Save Scenario Info</button>
-      <div class="sep"></div>
-      <div class="sh"><span class="st">Card Display</span></div>
-      <span class="hint">Choose which attributes to show on event cards in diagrams.</span>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-top:2px">
-        <label class="tchk"><input type="checkbox" id="dc-level" checked onchange="saveDisplayConfig()"> Event Level</label>
-        <label class="tchk"><input type="checkbox" id="dc-event-code" checked onchange="saveDisplayConfig()"> Event Code</label>
-        <label class="tchk"><input type="checkbox" id="dc-managed-integration-code" checked onchange="saveDisplayConfig()"> Integration Code</label>
-        <label class="tchk"><input type="checkbox" id="dc-actor" checked onchange="saveDisplayConfig()"> Actor</label>
-        <label class="tchk"><input type="checkbox" id="dc-show-date" checked onchange="saveDisplayConfig()"> Date&nbsp;<span class="hint" style="margin-left:4px">(Timeline)</span></label>
-        <label class="tchk"><input type="checkbox" id="dc-show-seq" checked onchange="saveDisplayConfig()"> Seq #&nbsp;<span class="hint" style="margin-left:4px">(Flow)</span></label>
-      </div>
-      <div class="sep"></div>
-      <div class="sh"><span class="st">Timestamp Format</span></div>
-      <span class="hint">Choose how dates and times are displayed across all views.</span>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
-        <div class="fg">
-          <label class="fl">Date Format</label>
-          <select id="dc-date-format" onchange="saveDisplayConfig()">
-            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-            <option value="DD MMM YYYY">DD MMM YYYY</option>
-            <option value="MMM DD, YYYY">MMM DD, YYYY</option>
-          </select>
-        </div>
-        <div class="fg">
-          <label class="fl">Time Format</label>
-          <select id="dc-time-format" onchange="saveDisplayConfig()">
-            <option value="HH:mm:ss">HH:mm:ss (24-hour)</option>
-            <option value="HH:mm">HH:mm (24-hour, no seconds)</option>
-            <option value="h:mm:ss a">h:mm:ss am/pm</option>
-            <option value="h:mm a">h:mm am/pm</option>
-          </select>
-        </div>
-      </div>
-      <div class="sep"></div>
-      <div class="sh">
-        <span class="st">Legend</span>
-        <button class="btn btn-outline btn-sm" id="legend-toggle-btn" onclick="toggleLegend()" title="Toggle diagram legend">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="3" y1="12" x2="9" y2="12"/><line x1="3" y1="6" x2="9" y2="6"/><line x1="3" y1="18" x2="9" y2="18"/><path d="M13 6h8M13 12h8M13 18h8"/></svg>
-          Toggle
-        </button>
-      </div>
-      <span class="hint">Show or hide the interaction type legend on the diagram.</span>
-    </div>
-
     <!-- Data Source sidebar panel -->
     <div class="sidebar-panel" id="panel-datasource">
       <div class="ds-panel-header">
@@ -343,7 +282,7 @@
       <div id="ds-panel-connected" style="display:none">
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
           <span class="hint" id="ds-panel-summary" style="flex:1;margin:0"></span>
-          <button class="btn btn-outline btn-sm" onclick="dsOpenConfig('datasource')">Settings</button>
+          <button class="btn btn-outline btn-sm ds-panel-settings-btn" onclick="dsOpenConfig('datasource')">Settings</button>
         </div>
         <div class="btn-row" style="margin-top:4px">
           <button class="btn btn-p btn-full" onclick="dsRunQuery()">
@@ -410,6 +349,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
         Filter
         <span class="filter-badge" id="filter-badge" style="display:none"></span>
+      </button>
+      <div class="tdiv"></div>
+      <button class="btn btn-outline btn-sm" onclick="openDiagramSettings()" title="Diagram Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       </button>
     </div>
     <div class="fbar fbar-hidden" id="fbar" role="search" aria-label="Filter events">
@@ -541,11 +484,11 @@
         <span class="hint" style="flex:1;margin:0">Backup / Restore:</span>
         <button class="btn btn-outline btn-sm" onclick="dsExportConfig()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export Config
+          Export Connection
         </button>
         <button class="btn btn-outline btn-sm" onclick="dsImportConfigClick()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Import Config
+          Import Connection
         </button>
         <input type="file" id="ds-config-file" accept=".json" style="display:none" onchange="dsImportConfigFile(event)">
       </div>
@@ -677,14 +620,78 @@
         <span class="hint" style="flex:1;margin:0">Query:</span>
         <button class="btn btn-outline btn-sm" onclick="dsExportQuery()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export
+          Export Query
         </button>
         <button class="btn btn-outline btn-sm" onclick="dsImportQueryClick()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Import
+          Import Query
         </button>
         <input type="file" id="ds-query-file" accept=".json" style="display:none" onchange="dsImportQueryFile(event)">
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Diagram Settings Modal -->
+<div class="modal-overlay log-modal-overlay" id="diagram-settings-modal">
+  <div class="modal-card log-modal-card" role="dialog" aria-modal="true" aria-label="Diagram Settings">
+    <button class="modal-close" onclick="closeDiagramSettings()" title="Close">&#x2715;</button>
+    <h2 class="about-title" style="font-size:1.15rem;margin-bottom:4px;text-align:left">Diagram Settings</h2>
+    <p class="about-sub" style="margin-bottom:12px;text-align:left">Scenario info, card display, timestamps &amp; legend</p>
+    <div class="diagram-settings-body">
+      <div class="fg">
+        <label class="fl">Scenario Name</label>
+        <input type="text" id="scenario-name" placeholder="Name this scenario…">
+      </div>
+      <div class="fg">
+        <label class="fl">Notes</label>
+        <textarea id="scenario-desc" rows="3" placeholder="Optional notes…" style="resize:vertical"></textarea>
+      </div>
+      <button class="btn btn-p" onclick="saveScenario()">Save Scenario Info</button>
+      <div class="sep"></div>
+      <div class="sh"><span class="st">Card Display</span></div>
+      <span class="hint">Choose which attributes to show on event cards in diagrams.</span>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:2px">
+        <label class="tchk"><input type="checkbox" id="dc-level" checked onchange="saveDisplayConfig()"> Event Level</label>
+        <label class="tchk"><input type="checkbox" id="dc-event-code" checked onchange="saveDisplayConfig()"> Event Code</label>
+        <label class="tchk"><input type="checkbox" id="dc-managed-integration-code" checked onchange="saveDisplayConfig()"> Integration Code</label>
+        <label class="tchk"><input type="checkbox" id="dc-actor" checked onchange="saveDisplayConfig()"> Actor</label>
+        <label class="tchk"><input type="checkbox" id="dc-show-date" checked onchange="saveDisplayConfig()"> Date&nbsp;<span class="hint" style="margin-left:4px">(Timeline)</span></label>
+        <label class="tchk"><input type="checkbox" id="dc-show-seq" checked onchange="saveDisplayConfig()"> Seq #&nbsp;<span class="hint" style="margin-left:4px">(Flow)</span></label>
+      </div>
+      <div class="sep"></div>
+      <div class="sh"><span class="st">Timestamp Format</span></div>
+      <span class="hint">Choose how dates and times are displayed across all views.</span>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+        <div class="fg">
+          <label class="fl">Date Format</label>
+          <select id="dc-date-format" onchange="saveDisplayConfig()">
+            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+            <option value="DD MMM YYYY">DD MMM YYYY</option>
+            <option value="MMM DD, YYYY">MMM DD, YYYY</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">Time Format</label>
+          <select id="dc-time-format" onchange="saveDisplayConfig()">
+            <option value="HH:mm:ss">HH:mm:ss (24-hour)</option>
+            <option value="HH:mm">HH:mm (24-hour, no seconds)</option>
+            <option value="h:mm:ss a">h:mm:ss am/pm</option>
+            <option value="h:mm a">h:mm am/pm</option>
+          </select>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="sh">
+        <span class="st">Legend</span>
+        <button class="btn btn-outline btn-sm" id="legend-toggle-btn" onclick="toggleLegend()" title="Toggle diagram legend">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="3" y1="12" x2="9" y2="12"/><line x1="3" y1="6" x2="9" y2="6"/><line x1="3" y1="18" x2="9" y2="18"/><path d="M13 6h8M13 12h8M13 18h8"/></svg>
+          Toggle
+        </button>
+      </div>
+      <span class="hint">Show or hide the interaction type legend on the diagram.</span>
     </div>
   </div>
 </div>

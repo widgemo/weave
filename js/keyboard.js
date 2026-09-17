@@ -11,7 +11,7 @@ function _isTypingContext(){
   return tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT';
 }
 
-var _KB_MODAL_IDS=['confirm-modal','export-name-modal','ds-config-modal','log-modal','about-modal','shortcuts-modal'];
+var _KB_MODAL_IDS=['confirm-modal','export-name-modal','ds-config-modal','log-modal','about-modal','shortcuts-modal','diagram-settings-modal'];
 function _anyModalOpen(){
   return _KB_MODAL_IDS.some(function(id){
     var el=document.getElementById(id);
@@ -39,6 +39,7 @@ function _handleEscape(){
       else if(id==='log-modal') closeLogViewer();
       else if(id==='about-modal') closeAbout();
       else if(id==='shortcuts-modal') closeShortcutsHelp();
+      else if(id==='diagram-settings-modal') closeDiagramSettings();
       return;
     }
   }

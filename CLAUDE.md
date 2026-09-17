@@ -22,7 +22,7 @@ Deployed as a GitHub Pages site.
 - `js/render-timeline.js` — Timeline mode diagram rendering (timestamp-based, compact/linear scale)
 - `js/import-export.js` — JSON import/export, localStorage persistence, and schema migration (`migrateData()`)
 - `js/filter.js` — the filter bar (search text, system/actor/level/code multiselects, event isolation)
-- `js/ui-modals.js` — the event context menu, and the About/Confirm/Export-filename modals
+- `js/ui-modals.js` — the event context menu, and the About/Confirm/Export-filename/Diagram-Settings modals
 - `js/ui-sidebar.js` — banner chrome (file menu, theme toggle, legend), mode/tab switching, the event list, timezone selector, and app init
 - `js/ui-forms.js` — the event + interaction add/edit form, scenario save, clear/new-diagram actions
 - `js/ui-registry.js` — the Systems/Actors registry CRUD and system lane-order UI
@@ -71,7 +71,7 @@ in `js/import-export.js`.
   method, query string/body, pagination) and the field-mapping form live in the
   **Data Source Connection modal**'s "Data Source" and "Field Mappings" tabs
   respectively (`dsOpenConfig(tab)`/`dsSwitchConfigTab(tab)` in
-  `js/datasource-auth.js`) — the sidebar Data panel itself only shows a compact
+  `js/datasource-auth.js`) — the sidebar Sources panel itself only shows a compact
   connection summary, the Run Query button, and the results list, keeping
   configuration and query-running visually separate. `dsRecordToEvent()` maps
   configurable response fields (description, system, actor, timestamp,
