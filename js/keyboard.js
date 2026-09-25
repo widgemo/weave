@@ -11,7 +11,7 @@ function _isTypingContext(){
   return tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT';
 }
 
-var _KB_MODAL_IDS=['confirm-modal','export-name-modal','ds-config-modal','log-modal','about-modal','shortcuts-modal','diagram-settings-modal'];
+var _KB_MODAL_IDS=['confirm-modal','export-name-modal','ds-config-modal','log-modal','about-modal','shortcuts-modal','diagram-settings-modal','library-modal','library-name-modal'];
 function _anyModalOpen(){
   return _KB_MODAL_IDS.some(function(id){
     var el=document.getElementById(id);
@@ -29,6 +29,11 @@ function _handleEscape(){
     // double-handling Escape on the same keypress (see index.html).
     return;
   }
+  if((document.activeElement||{}).id==='library-name-input'){
+    // Its own inline onkeydown already closes library-name-modal; avoid
+    // double-handling Escape on the same keypress (see index.html).
+    return;
+  }
   for(var i=0;i<_KB_MODAL_IDS.length;i++){
     var id=_KB_MODAL_IDS[i];
     var el=document.getElementById(id);
@@ -40,6 +45,8 @@ function _handleEscape(){
       else if(id==='about-modal') closeAbout();
       else if(id==='shortcuts-modal') closeShortcutsHelp();
       else if(id==='diagram-settings-modal') closeDiagramSettings();
+      else if(id==='library-modal') closeLibrary();
+      else if(id==='library-name-modal') closeLibraryNameModal();
       return;
     }
   }

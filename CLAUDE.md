@@ -29,6 +29,7 @@ Deployed as a GitHub Pages site.
 - `js/keyboard.js` — global keyboard shortcuts (delete/duplicate/nudge lane-or-sequence/escape) for canvas and Table mode selection
 - `js/datasource-auth.js` — data-source OAuth 2.0 (PKCE) flow, token storage, and the connection config UI
 - `js/datasource-query.js` — data-source query form, results list, and record→event field mapping
+- `js/library.js` — the localStorage-backed Library (saved diagrams, data-source connections, and query+field-mapping configs): the save/load/rename/delete/export CRUD, the tabbed Library modal (mirroring the Data Source Connection modal's tab pattern), the "Save to Library" naming prompt, and the shared split-button component used by the three existing Export actions
 
 None of these are ES modules — every file is loaded via a plain `<script>` tag in `index.html` (in the order listed above) and shares one global scope, per the "no build step" constraint below. Splitting a file further only changes which `<script>` tag a function lives in; it does not change how functions call each other.
 
