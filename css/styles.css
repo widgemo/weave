@@ -528,6 +528,27 @@ html.dark .log-badge-error{background:#e05555}
 .ds-menu-danger:hover{background:rgba(255,80,80,.12)}
 .ds-menu-divider{height:1px;background:var(--nav-div);margin:3px 8px}
 
+/* Split button (Save to Library / Export…) — placed on theme-aware surfaces
+   (modal/panel), so it uses --surface, --border and --text tokens rather
+   than the always-dark --nav-* tokens .ds-menu uses (that one lives only in
+   the permanently-dark top banner). */
+.split-btn{position:relative;display:inline-flex;align-items:stretch}
+.split-btn-main{border-top-right-radius:0;border-bottom-right-radius:0}
+.split-btn-caret{border-top-left-radius:0;border-bottom-left-radius:0;
+  border-left:none;padding:0 8px;display:inline-flex;align-items:center;justify-content:center}
+/* Opens upward: both usages sit in a footer-style row at the bottom of a
+   scrollable modal, where a downward-opening menu gets clipped by the
+   modal's own overflow:auto (confirmed via layout testing). */
+.split-btn-menu{position:absolute;bottom:calc(100% + 6px);left:0;z-index:600;display:none;
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:5px 4px;min-width:140px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.split-btn-menu.open{display:block}
+.split-btn-item{display:flex;align-items:center;gap:8px;width:100%;padding:7px 12px;
+  background:transparent;border:none;color:var(--text);cursor:pointer;
+  border-radius:7px;font-size:.8rem;font-family:'DM Sans',sans-serif;
+  transition:background .15s;white-space:nowrap;text-align:left}
+.split-btn-item:hover{background:var(--surface3)}
+
 /* Config modal */
 .ds-config-card{max-width:560px;width:94%;text-align:left;max-height:85vh;overflow-y:auto}
 .ds-config-card .about-title{text-align:left}

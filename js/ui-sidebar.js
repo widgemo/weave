@@ -274,6 +274,12 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('diagram-settings-modal').addEventListener('click',function(e){
     if(e.target===this) closeDiagramSettings();
   });
+  document.getElementById('library-modal').addEventListener('click',function(e){
+    if(e.target===this) closeLibrary();
+  });
+  document.getElementById('library-name-modal').addEventListener('click',function(e){
+    if(e.target===this) closeLibraryNameModal();
+  });
   // Close file menu when clicking outside
   document.addEventListener('click',function(e){
     var menu=document.getElementById('file-menu');

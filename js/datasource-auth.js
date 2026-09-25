@@ -423,13 +423,13 @@ function dsUpdatePanelStatus() {
 }
 
 // ── CONFIG IMPORT / EXPORT ─────────────────────────────────────────────────
-function dsExportConfig() {
+// Builds the connection-config export/Library shape, or null when there's
+// nothing meaningful to save yet. Shared by dsExportConfig() and
+// libSaveCurrentConnection().
+function _buildConnectionData() {
   var cfg = dsLoadConfig();
-  if (!cfg.baseUrl && !cfg.clientId) {
-    toast('No data source configuration to export', '!');
-    return;
-  }
-  var exportObj = {
+  if (!cfg.baseUrl && !cfg.clientId) return null;
+  return {
     weaveDsConfig: true,
     label:     cfg.label     || '',
     baseUrl:   cfg.baseUrl   || '',
@@ -438,6 +438,13 @@ function dsExportConfig() {
     authPath:  cfg.authPath  || '/oauth_auth.do',
     tokenPath: cfg.tokenPath || '/oauth_token.do'
   };
+}
+function dsExportConfig() {
+  var exportObj = _buildConnectionData();
+  if (!exportObj) {
+    toast('No data source configuration to export', '!');
+    return;
+  }
   promptExportFilename('weave-ds-config.json','Export Config',function(filename){
     var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
     triggerDownload(blob, filename);
@@ -473,6 +480,10 @@ function dsImportConfigFile(e) {
         authPath:  data.authPath  || '/oauth_auth.do',
         tokenPath: data.tokenPath || '/oauth_token.do'
       });
+      // The previously-active connection's token won't be valid for this
+      // one (different baseUrl/clientId) — clear it rather than leaving a
+      // stale token that will silently fail auth against the new endpoint.
+      dsClearToken();
       // Populate the modal fields so the user can see the imported values
       document.getElementById('ds-label').value      = data.label     || '';
       document.getElementById('ds-base-url').value   = data.baseUrl;
@@ -481,8 +492,9 @@ function dsImportConfigFile(e) {
       document.getElementById('ds-auth-path').value  = data.authPath  || '/oauth_auth.do';
       document.getElementById('ds-token-path').value = data.tokenPath || '/oauth_token.do';
       dsUpdateBannerBtn();
-      toast('Config imported', '↑');
-      appLog('info', 'Data source config imported');
+      dsUpdatePanelStatus();
+      toast('Config imported — please log in again', '↑');
+      appLog('info', 'Data source config imported (token cleared)');
     } catch(err) {
       appLog('error', 'Invalid config file', err && err.message ? err.message : String(err));
     }
