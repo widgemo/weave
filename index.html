@@ -59,9 +59,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Import
         </button>
+        <button class="ds-menu-item" onclick="libSaveCurrentDiagram();fileMenuClose()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+          Save to Library
+        </button>
         <button class="ds-menu-item" onclick="exportData();fileMenuClose()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Export
+          Export&hellip;
         </button>
         <div class="ds-menu-divider"></div>
         <button class="ds-menu-item ds-menu-danger" onclick="clearAll();fileMenuClose()">
@@ -98,6 +102,11 @@
         <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/>
       </svg>Logs
       <span class="log-badge" id="log-badge" style="display:none"></span>
+    </button>
+    <button class="theme-btn" onclick="openLibrary()" title="Library">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+      </svg>
     </button>
     <!-- About: icon-only to reduce navbar clutter -->
     <button class="theme-btn" onclick="openAbout()" title="About Weave">
@@ -482,10 +491,18 @@
       <div class="sep" style="margin-top:14px"></div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px">
         <span class="hint" style="flex:1;margin:0">Backup / Restore:</span>
-        <button class="btn btn-outline btn-sm" onclick="dsExportConfig()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export Connection
-        </button>
+        <div class="split-btn">
+          <button class="btn btn-outline btn-sm split-btn-main" onclick="libSaveCurrentConnection()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+            Save to Library
+          </button>
+          <button class="btn btn-outline btn-sm split-btn-caret" onclick="toggleSplitMenu('sm-conn-export',event)" title="More options">
+            <svg viewBox="0 0 10 6" fill="currentColor" width="8" height="8"><path d="M0 0l5 6 5-6z"/></svg>
+          </button>
+          <div class="split-btn-menu" id="sm-conn-export">
+            <button class="split-btn-item" onclick="dsExportConfig();closeSplitMenu('sm-conn-export')">Export&hellip;</button>
+          </div>
+        </div>
         <button class="btn btn-outline btn-sm" onclick="dsImportConfigClick()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Import Connection
@@ -531,7 +548,7 @@
           <input type="text" id="ds-offset-param" placeholder="e.g. offset, page, sysparm_offset" autocomplete="off">
         </div>
       </div>
-      <span class="hint">Set an offset param name to enable Prev/Next paging in the panel.</span>
+      <span class="hint">Set an offset param name to enable Prev/Next paging in the panel. Applies to POST requests too &mdash; sent as URL params alongside the request body.</span>
     </div>
 
     <div class="ds-modal-tab-panel" id="dsmpanel-mapping">
@@ -618,16 +635,50 @@
       <div class="sep" style="margin:14px 0 10px"></div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <span class="hint" style="flex:1;margin:0">Query:</span>
-        <button class="btn btn-outline btn-sm" onclick="dsExportQuery()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export Query
-        </button>
+        <div class="split-btn">
+          <button class="btn btn-outline btn-sm split-btn-main" onclick="libSaveCurrentQuery()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+            Save to Library
+          </button>
+          <button class="btn btn-outline btn-sm split-btn-caret" onclick="toggleSplitMenu('sm-query-export',event)" title="More options">
+            <svg viewBox="0 0 10 6" fill="currentColor" width="8" height="8"><path d="M0 0l5 6 5-6z"/></svg>
+          </button>
+          <div class="split-btn-menu" id="sm-query-export">
+            <button class="split-btn-item" onclick="dsExportQuery();closeSplitMenu('sm-query-export')">Export&hellip;</button>
+          </div>
+        </div>
         <button class="btn btn-outline btn-sm" onclick="dsImportQueryClick()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Import Query
         </button>
         <input type="file" id="ds-query-file" accept=".json" style="display:none" onchange="dsImportQueryFile(event)">
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Library Modal -->
+<div class="modal-overlay" id="library-modal">
+  <div class="modal-card ds-config-card" role="dialog" aria-modal="true" aria-label="Library">
+    <button class="modal-close" onclick="closeLibrary()" title="Close">&#x2715;</button>
+    <h2 class="about-title" style="font-size:1.15rem;margin-bottom:4px">Library</h2>
+    <p class="about-sub" style="margin-bottom:18px">Saved diagrams, connections &amp; query configs &mdash; stored in this browser</p>
+    <div class="ds-modal-tabs">
+      <button class="ds-modal-tab active" id="libtab-diagrams" onclick="libSwitchTab('diagrams')">Diagrams</button>
+      <button class="ds-modal-tab" id="libtab-connections" onclick="libSwitchTab('connections')">Connections</button>
+      <button class="ds-modal-tab" id="libtab-queries" onclick="libSwitchTab('queries')">Query Configs</button>
+    </div>
+    <div class="ds-modal-tab-panel active" id="libpanel-diagrams">
+      <button class="btn btn-outline btn-sm" style="margin-bottom:10px" onclick="libSaveCurrentDiagram()">+ Save current diagram</button>
+      <div id="library-diagrams-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div class="ds-modal-tab-panel" id="libpanel-connections">
+      <button class="btn btn-outline btn-sm" style="margin-bottom:10px" onclick="libSaveCurrentConnection()">+ Save current connection</button>
+      <div id="library-connections-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div class="ds-modal-tab-panel" id="libpanel-queries">
+      <button class="btn btn-outline btn-sm" style="margin-bottom:10px" onclick="libSaveCurrentQuery()">+ Save current query config</button>
+      <div id="library-queries-list" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
   </div>
 </div>
@@ -766,6 +817,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="library-name-modal">
+  <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-label="Save to Library" style="max-width:460px;width:90%">
+    <h3 class="confirm-title" id="library-name-title">Save to Library</h3>
+    <div class="fg" style="text-align:left;margin-bottom:18px">
+      <label class="fl" for="library-name-input">Name</label>
+      <input type="text" id="library-name-input" class="tsel" style="width:100%;box-sizing:border-box" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter') acceptLibraryName(); if(event.key==='Escape') closeLibraryNameModal();">
+    </div>
+    <div class="confirm-btns">
+      <button class="btn btn-s" onclick="closeLibraryNameModal()">Cancel</button>
+      <button class="btn btn-p" onclick="acceptLibraryName()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/logger.js"></script>
 <script src="js/state.js"></script>
 <script src="js/render.js"></script>
@@ -780,6 +845,7 @@
 <script src="js/keyboard.js"></script>
 <script src="js/datasource-auth.js"></script>
 <script src="js/datasource-query.js"></script>
+<script src="js/library.js"></script>
 <script>dsInit();</script>
 </body>
 </html>

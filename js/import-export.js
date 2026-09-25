@@ -24,20 +24,78 @@ function migrateData(data){
 }
 
 // IMPORT / EXPORT
+function _buildDiagramData(){
+  return {version:CURRENT_SCHEMA_VERSION,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,levelsRegistry:levelsRegistry,
+    displayConfig:displayConfig,
+    settings:{orientation:document.getElementById('orientation').value,
+              showDate:displayConfig.showDate,
+              flowDirection:document.getElementById('flow-dir').value,
+              showSeq:displayConfig.showSeq,
+              timezone:getDisplayTZ()},events:events};
+}
 function exportData(){
   var defaultName=(scenName||'eventflow')+'-'+appMode+'-'+new Date().toISOString().slice(0,10)+'.json';
   promptExportFilename(defaultName,'Export Data',function(filename){
-    var data={version:CURRENT_SCHEMA_VERSION,appMode:appMode,scenarioName:scenName,scenarioDesc:scenDesc,sysOrder:sysOrder,systemsRegistry:systemsRegistry,actorsRegistry:actorsRegistry,levelsRegistry:levelsRegistry,
-      displayConfig:displayConfig,
-      settings:{orientation:document.getElementById('orientation').value,
-                showDate:displayConfig.showDate,
-                flowDirection:document.getElementById('flow-dir').value,
-                showSeq:displayConfig.showSeq,
-                timezone:getDisplayTZ()},events:events};
+    var data=_buildDiagramData();
     var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     triggerDownload(blob,filename);
     toast('Exported','\u2193');
   });
+}
+// Restores a diagram-shaped data object (from a file import, localStorage
+// boot, or a Library entry) into live app state. Shared by importData(),
+// loadAppState(), and libLoadDiagram() so the restoration logic exists once.
+function _applyDiagramData(data){
+  data=migrateData(data);
+  scenName=data.scenarioName||''; scenDesc=data.scenarioDesc||'';
+  var nameEl=document.getElementById('scenario-name');
+  var descEl=document.getElementById('scenario-desc');
+  if(nameEl) nameEl.value=scenName;
+  if(descEl) descEl.value=scenDesc;
+  var importedMode=data.appMode||'timeline';
+  switchAppMode(importedMode);
+  if(data.settings){
+    var orientEl=document.getElementById('orientation');
+    var flowEl=document.getElementById('flow-dir');
+    if(orientEl) orientEl.value=data.settings.orientation||'vertical';
+    if(flowEl) flowEl.value=data.settings.flowDirection||'lr';
+  }
+  events=data.events||[]; sysOrder=data.sysOrder||{}; systemsRegistry=data.systemsRegistry||[]; actorsRegistry=data.actorsRegistry||[]; knownSys.clear(); clearForm();
+  // Levels are fixed; normalize any non-standard values from imported events
+  levelsRegistry=FIXED_LEVELS.slice();
+  events.forEach(function(ev){ev.level=normalizeLevel(ev.level);});
+  if(data.displayConfig){
+    displayConfig.showLevel=data.displayConfig.showLevel!==false;
+    displayConfig.showEventCode=data.displayConfig.showEventCode!==false;
+    displayConfig.showManagedIntegrationCode=data.displayConfig.showManagedIntegrationCode!==false;
+    displayConfig.showActor=data.displayConfig.showActor!==false;
+    displayConfig.showDate=data.displayConfig.showDate!==false;
+    displayConfig.showSeq=data.displayConfig.showSeq!==false;
+    var dcLevel=document.getElementById('dc-level');
+    var dcCode=document.getElementById('dc-event-code');
+    var dcMic=document.getElementById('dc-managed-integration-code');
+    var dcActor=document.getElementById('dc-actor');
+    var dcDate=document.getElementById('dc-show-date');
+    var dcSeq=document.getElementById('dc-show-seq');
+    if(dcLevel) dcLevel.checked=displayConfig.showLevel;
+    if(dcCode) dcCode.checked=displayConfig.showEventCode;
+    if(dcMic) dcMic.checked=displayConfig.showManagedIntegrationCode;
+    if(dcActor) dcActor.checked=displayConfig.showActor;
+    if(dcDate) dcDate.checked=displayConfig.showDate;
+    if(dcSeq) dcSeq.checked=displayConfig.showSeq;
+  } else if(data.settings){
+    displayConfig.showDate=data.settings.showDate!==false;
+    displayConfig.showSeq=data.settings.showSeq!==false;
+    var dcDate2=document.getElementById('dc-show-date');
+    var dcSeq2=document.getElementById('dc-show-seq');
+    if(dcDate2) dcDate2.checked=displayConfig.showDate;
+    if(dcSeq2) dcSeq2.checked=displayConfig.showSeq;
+  }
+  events.forEach(function(ev){
+    if(ev.system) knownSys.add(ev.system);
+    (ev.interactions||[]).forEach(function(i){if(i.target) knownSys.add(i.target);});
+  });
+  refreshDL(); refreshLevelDL(); render(); updateList();
 }
 function importClick(){document.getElementById('import-file').click();}
 function importData(e){
@@ -46,44 +104,9 @@ function importData(e){
   reader.onload=function(ev){
     try{
       var data=JSON.parse(ev.target.result);
-      data=migrateData(data);
-      scenName=data.scenarioName||''; scenDesc=data.scenarioDesc||'';
-      document.getElementById('scenario-name').value=scenName;
-      document.getElementById('scenario-desc').value=scenDesc;
-      var importedMode=data.appMode||'timeline';
-      switchAppMode(importedMode);
-      if(data.settings){
-        document.getElementById('orientation').value=data.settings.orientation||'vertical';
-        document.getElementById('flow-dir').value=data.settings.flowDirection||'lr';
-      }
-      events=data.events||[]; sysOrder=data.sysOrder||{}; systemsRegistry=data.systemsRegistry||[]; actorsRegistry=data.actorsRegistry||[]; knownSys.clear(); clearForm();
-      // Levels are fixed; normalize any non-standard values from imported events
-      levelsRegistry=FIXED_LEVELS.slice();
-      events.forEach(function(ev){ev.level=normalizeLevel(ev.level);});
-      if(data.displayConfig){
-        displayConfig.showLevel=data.displayConfig.showLevel!==false;
-        displayConfig.showEventCode=data.displayConfig.showEventCode!==false;
-        displayConfig.showManagedIntegrationCode=data.displayConfig.showManagedIntegrationCode!==false;
-        displayConfig.showActor=data.displayConfig.showActor!==false;
-        displayConfig.showDate=data.displayConfig.showDate!==false;
-        displayConfig.showSeq=data.displayConfig.showSeq!==false;
-        document.getElementById('dc-level').checked=displayConfig.showLevel;
-        document.getElementById('dc-event-code').checked=displayConfig.showEventCode;
-        document.getElementById('dc-managed-integration-code').checked=displayConfig.showManagedIntegrationCode;
-        document.getElementById('dc-actor').checked=displayConfig.showActor;
-        document.getElementById('dc-show-date').checked=displayConfig.showDate;
-        document.getElementById('dc-show-seq').checked=displayConfig.showSeq;
-      } else if(data.settings){
-        displayConfig.showDate=data.settings.showDate!==false;
-        displayConfig.showSeq=data.settings.showSeq!==false;
-        document.getElementById('dc-show-date').checked=displayConfig.showDate;
-        document.getElementById('dc-show-seq').checked=displayConfig.showSeq;
-      }
-      events.forEach(function(ev){
-        if(ev.system) knownSys.add(ev.system);
-        (ev.interactions||[]).forEach(function(i){if(i.target) knownSys.add(i.target);});
-      });
-      refreshDL(); refreshLevelDL(); clearFilters(); render(); updateList(); toast('Imported','\u2191');
+      _applyDiagramData(data);
+      clearFilters();
+      toast('Imported','\u2191');
     }catch(err){toast('Invalid file','X'); appLog('error','Invalid import file', err&&err.message?err.message:String(err));}
   };
   reader.readAsText(file); e.target.value='';
@@ -136,50 +159,7 @@ function loadAppState(){
     var raw=localStorage.getItem(WEAVE_APP_STATE_KEY);
     if(!raw) return false;
     var data=JSON.parse(raw);
-    data=migrateData(data);
-    scenName=data.scenarioName||''; scenDesc=data.scenarioDesc||'';
-    var nameEl=document.getElementById('scenario-name');
-    var descEl=document.getElementById('scenario-desc');
-    if(nameEl) nameEl.value=scenName;
-    if(descEl) descEl.value=scenDesc;
-    var importedMode=data.appMode||'timeline';
-    switchAppMode(importedMode);
-    if(data.settings){
-      var orientEl=document.getElementById('orientation');
-      var flowEl=document.getElementById('flow-dir');
-      if(orientEl) orientEl.value=data.settings.orientation||'vertical';
-      if(flowEl) flowEl.value=data.settings.flowDirection||'lr';
-    }
-    events=data.events||[]; sysOrder=data.sysOrder||{};
-    systemsRegistry=data.systemsRegistry||[]; actorsRegistry=data.actorsRegistry||[];
-    knownSys.clear();
-    levelsRegistry=FIXED_LEVELS.slice();
-    events.forEach(function(ev){ev.level=normalizeLevel(ev.level);});
-    if(data.displayConfig){
-      displayConfig.showLevel=data.displayConfig.showLevel!==false;
-      displayConfig.showEventCode=data.displayConfig.showEventCode!==false;
-      displayConfig.showManagedIntegrationCode=data.displayConfig.showManagedIntegrationCode!==false;
-      displayConfig.showActor=data.displayConfig.showActor!==false;
-      displayConfig.showDate=data.displayConfig.showDate!==false;
-      displayConfig.showSeq=data.displayConfig.showSeq!==false;
-      var dcLevel=document.getElementById('dc-level');
-      var dcCode=document.getElementById('dc-event-code');
-      var dcMic=document.getElementById('dc-managed-integration-code');
-      var dcActor=document.getElementById('dc-actor');
-      var dcDate=document.getElementById('dc-show-date');
-      var dcSeq=document.getElementById('dc-show-seq');
-      if(dcLevel) dcLevel.checked=displayConfig.showLevel;
-      if(dcCode) dcCode.checked=displayConfig.showEventCode;
-      if(dcMic) dcMic.checked=displayConfig.showManagedIntegrationCode;
-      if(dcActor) dcActor.checked=displayConfig.showActor;
-      if(dcDate) dcDate.checked=displayConfig.showDate;
-      if(dcSeq) dcSeq.checked=displayConfig.showSeq;
-    }
-    events.forEach(function(ev){
-      if(ev.system) knownSys.add(ev.system);
-      (ev.interactions||[]).forEach(function(i){if(i.target) knownSys.add(i.target);});
-    });
-    refreshDL(); refreshLevelDL(); render(); updateList();
+    _applyDiagramData(data);
     return true;
   }catch(e){
     appLog('error','Failed to restore app state from localStorage',e&&e.message?e.message:String(e));

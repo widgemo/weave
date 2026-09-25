@@ -478,12 +478,12 @@ function dsIsQueryEmpty(q) {
          !q.interactionsField;
 }
 
-function dsExportQuery() {
+// Builds the query+field-mapping export/Library shape, or null when there's
+// nothing meaningful to save yet. Shared by dsExportQuery() and
+// libSaveCurrentQuery().
+function _buildQueryData() {
   var q = dsReadQueryForm();
-  if (dsIsQueryEmpty(q)) {
-    toast('No query to export', '!');
-    return;
-  }
+  if (dsIsQueryEmpty(q)) return null;
   var fieldMap = {
     id:              q.idField,
     desc:            q.descField,
@@ -503,8 +503,15 @@ function dsExportQuery() {
       triggerField: q.intTriggerField
     }
   };
-  var exportObj = { weaveDsQuery: true, endpoint: q.endpoint, method: q.method, queryParams: q.queryParams,
+  return { weaveDsQuery: true, endpoint: q.endpoint, method: q.method, queryParams: q.queryParams,
     body: q.body, pageSize: q.pageSize, offsetParam: q.offsetParam, fieldMap: fieldMap };
+}
+function dsExportQuery() {
+  var exportObj = _buildQueryData();
+  if (!exportObj) {
+    toast('No query to export', '!');
+    return;
+  }
   promptExportFilename('weave-ds-query.json','Export Query',function(filename){
     var blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: 'application/json'});
     triggerDownload(blob, filename);
@@ -517,6 +524,37 @@ function dsImportQueryClick() {
   document.getElementById('ds-query-file').click();
 }
 
+// Restores a query+field-mapping-shaped data object (from a file import or
+// a Library entry) into the active query form + weave-ds-query localStorage
+// slot. Shared by dsImportQueryFile() and libLoadQuery().
+function _applyQueryData(data) {
+  var fm = data.fieldMap || {};
+  var intFm = fm.interactions || {};
+  dsPopulateQueryForm({
+    endpoint:          data.endpoint    || '',
+    method:            data.method      || 'get',
+    queryParams:       data.queryParams || '',
+    body:              data.body        || '',
+    pageSize:          data.pageSize    || '20',
+    offsetParam:       data.offsetParam || '',
+    idField:           fm.id           || '',
+    descField:         fm.desc          || '',
+    sysField:          fm.system        || '',
+    actorField:        fm.actor         || '',
+    tsField:           fm.timestamp     || '',
+    eventCodeField:    fm.eventCode     || '',
+    levelField:        fm.level         || '',
+    integCodeField:    fm.integrationCode || '',
+    interactionsField: intFm.field       || '',
+    intTargetField:    intFm.targetField  || '',
+    intNatureField:    intFm.natureField  || '',
+    intLabelField:     intFm.labelField   || '',
+    intDelayField:     intFm.delayField   || '',
+    intOrderField:     intFm.orderField   || '',
+    intTriggerField:   intFm.triggerField || ''
+  });
+  dsSaveQueryLocal();
+}
 function dsImportQueryFile(e) {
   var file = e.target.files[0];
   if (!file) return;
@@ -528,32 +566,7 @@ function dsImportQueryFile(e) {
         appLog('error', 'Not a valid Weave query file');
         return;
       }
-      var fm = data.fieldMap || {};
-      var intFm = fm.interactions || {};
-      dsPopulateQueryForm({
-        endpoint:          data.endpoint    || '',
-        method:            data.method      || 'get',
-        queryParams:       data.queryParams || '',
-        body:              data.body        || '',
-        pageSize:          data.pageSize    || '20',
-        offsetParam:       data.offsetParam || '',
-        idField:           fm.id           || '',
-        descField:         fm.desc          || '',
-        sysField:          fm.system        || '',
-        actorField:        fm.actor         || '',
-        tsField:           fm.timestamp     || '',
-        eventCodeField:    fm.eventCode     || '',
-        levelField:        fm.level         || '',
-        integCodeField:    fm.integrationCode || '',
-        interactionsField: intFm.field       || '',
-        intTargetField:    intFm.targetField  || '',
-        intNatureField:    intFm.natureField  || '',
-        intLabelField:     intFm.labelField   || '',
-        intDelayField:     intFm.delayField   || '',
-        intOrderField:     intFm.orderField   || '',
-        intTriggerField:   intFm.triggerField || ''
-      });
-      dsSaveQueryLocal();
+      _applyQueryData(data);
       toast('Query imported', '↑');
       appLog('info', 'Query config imported');
     } catch(err) {
